@@ -1,0 +1,222 @@
+@startuml Sequence_JeuDeDames
+
+title Diagramme de Séquence - Jeu de Dames JavaFX
+
+actor "Joueur" as J
+participant "BoardView" as BV
+participant "GameController" as GC
+participant "MoveValidator" as MV
+participant "Board" as B
+participant "GameState" as GS
+
+' ============================================================
+' 1. Lancement de la partie
+' ============================================================
+== Initialisation de la partie ==
+
+J -> BV : Clic "Nouvelle Partie"
+BV -> GC : lancerPartie()
+GC -> B : initialiserPlateau(10x10)
+B -> B : placerPions(20 blancs, 20 noirs)
+B --> GC : plateau initialisé
+GC -> GS : créerÉtat(tourBlancs=true)
+GS --> GC : état créé
+GC -> BV : afficherPlateau(board)
+BV --> J : Plateau affiché avec pions
+
+' ============================================================
+' 2. Sélection d'un pion
+' ============================================================
+== Tour d'un joueur : sélection d'un pion ==
+
+J -> BV : Clic sur un pion
+BV -> GC : sélectionnerPièce(ligne, colonne)
+GC -> GS : vérifierTour(couleurPièce)
+
+alt Pièce appartient au joueur actif
+    GS --> GC : tour valide
+    GC -> MV : calculerMouvementsLégaux(pièce, board)
+    MV -> MV : vérifierDéplacementsSimples()
+    MV -> MV : vérifierPrisesPossibles()
+
+    alt Des prises sont possibles (R-PR1 : prise obligatoire)
+        MV -> MV : calculerPriseMaximale()
+        MV --> GC : listeMouvements (prises uniquement)
+    else Aucune prise disponible
+        MV --> GC : listeMouvements (déplacements simples)
+    end
+
+    GC -> BV : surbrillanceCases(listeMouvements)
+    BV --> J : Cases jouables en surbrillance
+
+else Pièce adverse ou case vide
+    GS --> GC : tour invalide
+    GC -> BV : afficherErreur("Ce n'est pas votre tour")
+    BV --> J : Message d'erreur
+end
+
+' ============================================================
+' 3. Déplacement simple d'un pion
+' ============================================================
+== Déplacement simple ==
+
+J -> BV : Clic sur case destination
+BV -> GC : jouerMouvement(origine, destination)
+GC -> MV : validerMouvement(pièce, destination, board)
+MV -> MV : vérifierDiagonale()
+MV -> MV : vérifierCaseVide(destination)
+MV -> MV : vérifierSens(pion avance uniquement)
+
+alt Mouvement valide
+    MV --> GC : mouvement accepté
+    GC -> B : déplacerPièce(origine, destination)
+    B --> GC : pièce déplacée
+
+    ' Vérification promotion
+    GC -> MV : vérifierPromotion(pièce, destination)
+
+    alt Pion atteint dernière rangée (R-PM1/R-PM2)
+        MV --> GC : promotion nécessaire
+        GC -> B : promouvoir(pion → dame)
+        B --> GC : dame créée
+        GC -> BV : afficherPromotion(position)
+    else Pas de promotion
+        MV --> GC : pas de promotion
+    end
+
+    GC -> GS : changerTour()
+    GC -> BV : mettreÀJourPlateau(board)
+    BV --> J : Plateau mis à jour
+
+else Mouvement invalide
+    MV --> GC : mouvement refusé (raison)
+    GC -> BV : afficherErreur("Mouvement illégal")
+    BV --> J : Message d'erreur
+end
+
+' ============================================================
+' 4. Prise simple
+' ============================================================
+== Prise simple ==
+
+J -> BV : Clic sur case de prise
+BV -> GC : jouerMouvement(origine, destination)
+GC -> MV : validerPrise(pièce, destination, board)
+MV -> MV : vérifierPièceAdverseEntre()
+MV -> MV : vérifierCaseArrièreVide()
+
+alt Prise valide
+    MV --> GC : prise acceptée
+    GC -> B : déplacerPièce(origine, destination)
+    GC -> B : marquerPièceCapturée(pièceAdverse)
+    B --> GC : prise effectuée
+
+    ' Vérifier prise en chaîne (R-P11)
+    GC -> MV : vérifierPriseSuivante(pièce, board)
+
+    alt Autre prise possible (prise en chaîne)
+        MV --> GC : prises suivantes disponibles
+        GC -> BV : surbrillanceCases(prisesChaine)
+        BV --> J : Cases de prise en chaîne affichées
+
+        ref over J, BV, GC, MV, B
+            Le joueur continue la prise en chaîne
+            (répéter jusqu'à plus de prise possible)
+        end
+
+    else Plus de prise possible
+        MV --> GC : chaîne terminée
+        GC -> B : retirerPièceCapturées()
+        B --> GC : pièces retirées
+
+        ' Vérification promotion après prise
+        GC -> MV : vérifierPromotion(pièce, destination)
+        alt Promotion (R-PM4 : pas de continuation en dame)
+            MV --> GC : promotion, tour terminé
+            GC -> B : promouvoir(pion → dame)
+        end
+
+        GC -> GS : changerTour()
+        GC -> BV : mettreÀJourPlateau(board)
+        BV --> J : Plateau mis à jour
+    end
+
+else Prise invalide
+    MV --> GC : prise refusée
+    GC -> BV : afficherErreur("Prise invalide")
+    BV --> J : Message d'erreur
+end
+
+' ============================================================
+' 5. Déplacement de la dame
+' ============================================================
+== Déplacement de la dame ==
+
+J -> BV : Clic sur une dame
+BV -> GC : sélectionnerPièce(ligne, colonne)
+GC -> MV : calculerMouvementsLégaux(dame, board)
+MV -> MV : calculerDiagonalesComplètes()
+MV -> MV : vérifierPrisesPossiblesDame()
+
+alt Prises disponibles (R-PR1)
+    MV -> MV : calculerPriseMaximale()
+    MV --> GC : listePrises (maximales uniquement)
+else Aucune prise
+    MV --> GC : listeDéplacements (toutes diagonales libres)
+end
+
+GC -> BV : surbrillanceCases(listeMouvements)
+BV --> J : Cases jouables affichées
+
+J -> BV : Clic sur case destination
+BV -> GC : jouerMouvement(origine, destination)
+GC -> MV : validerMouvementDame(dame, destination, board)
+MV -> MV : vérifierTrajectoireLibre()
+MV --> GC : mouvement accepté
+GC -> B : déplacerPièce(origine, destination)
+GC -> GS : changerTour()
+GC -> BV : mettreÀJourPlateau(board)
+BV --> J : Plateau mis à jour
+
+' ============================================================
+' 6. Détection fin de partie
+' ============================================================
+== Vérification fin de partie (après chaque coup) ==
+
+GC -> GS : vérifierFinPartie(board)
+GS -> B : compterPièces(joueurAdverse)
+
+alt Plus de pièces adverses (R-FP1)
+    B --> GS : 0 pièces
+    GS --> GC : victoire joueur actif
+
+    GC -> BV : afficherÉcranRésultat("Victoire", stats)
+    BV --> J : Écran de résultat
+
+else Adversaire bloqué (R-FP2)
+    GS -> MV : calculerTousMouvements(joueurAdverse, board)
+    MV --> GS : aucun mouvement possible
+    GS --> GC : victoire joueur actif
+
+    GC -> BV : afficherÉcranRésultat("Victoire", stats)
+    BV --> J : Écran de résultat
+
+else Match nul : 25 coups dames sans prise (R-FP3)
+    GS -> GS : vérifierCompteurCoups()
+    GS --> GC : match nul
+
+    GC -> BV : afficherÉcranRésultat("Match nul", stats)
+    BV --> J : Écran de résultat
+
+else Match nul : position répétée 3 fois (R-FP4)
+    GS -> GS : vérifierHistoriquePositions()
+    GS --> GC : match nul
+
+    GC -> BV : afficherÉcranRésultat("Match nul", stats)
+    BV --> J : Écran de résultat
+
+else Partie continue
+    GS --> GC : partie en cours
+end
+
+@enduml

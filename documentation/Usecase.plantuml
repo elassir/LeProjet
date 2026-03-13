@@ -1,0 +1,132 @@
+@startuml Usecase_JeuDeDames
+
+left to right direction
+skinparam actorStyle awesome
+
+title Diagramme de Cas d'Utilisation - Jeu de Dames JavaFX
+
+' ============================
+' Acteurs
+' ============================
+actor "Joueur" as J
+actor "Arbitre" as A
+actor "Serveur\nRéseau" as Reseau
+
+' ============================
+' Système
+' ============================
+rectangle "Jeu de Dames JavaFX" {
+
+    ' --- Partie ---
+    usecase "Lancer une partie" as UC1
+    usecase "Déplacer un pion" as UC2
+    usecase "Déplacer une dame" as UC3
+    usecase "Effectuer une prise" as UC4
+    usecase "Consulter le plateau" as UC5
+    usecase "Jouer en ligne" as UC6
+
+    ' --- Navigation / Config ---
+    usecase "Naviguer dans les menus" as UC7
+    usecase "Configurer les paramètres" as UC8
+
+    ' --- Optionnel ---
+    usecase "Sauvegarder une partie" as UC9
+    usecase "Charger une partie" as UC10
+    usecase "Consulter l'historique\ndes coups" as UC11
+    usecase "Changer le thème visuel" as UC12
+
+    ' --- Include (règles internes) ---
+    usecase "Valider le mouvement" as INC1
+    usecase "Vérifier la prise\nobligatoire" as INC2
+    usecase "Appliquer la prise\nmaximale" as INC3
+    usecase "Gérer la prise\nen chaîne" as INC4
+    usecase "Promouvoir en dame" as INC5
+    usecase "Détecter la fin\nde partie" as INC6
+    usecase "Gérer le tour\npar tour" as INC7
+
+    ' --- Extend ---
+    usecase "Afficher les cases\njouables" as EXT1
+    usecase "Gérer le timer" as EXT2
+    usecase "Afficher le score\net statistiques" as EXT3
+    usecase "Jouer des sons\net animations" as EXT4
+}
+
+' ============================
+' Relations Joueur
+' ============================
+J --> UC1
+J --> UC2
+J --> UC3
+J --> UC4
+J --> UC5
+J --> UC6
+J --> UC7
+J --> UC8
+J --> UC9
+J --> UC10
+J --> UC11
+J --> UC12
+
+' ============================
+' Relations Arbitre (règles métier)
+' ============================
+A --> INC1
+A --> INC2
+A --> INC3
+A --> INC4
+A --> INC5
+A --> INC6
+A --> INC7
+
+' ============================
+' Relations Serveur Réseau
+' ============================
+Reseau --> UC6
+
+' ============================
+' Relations <<include>>
+' ============================
+UC2 ..> INC1 : <<include>>
+UC3 ..> INC1 : <<include>>
+UC4 ..> INC1 : <<include>>
+INC1 ..> INC2 : <<include>>
+INC2 ..> INC3 : <<include>>
+UC4 ..> INC4 : <<include>>
+UC1 ..> INC7 : <<include>>
+UC1 ..> INC6 : <<include>>
+UC2 ..> INC5 : <<include>>
+
+' ============================
+' Relations <<extend>>
+' ============================
+UC2 <.. EXT1 : <<extend>>
+UC1 <.. EXT2 : <<extend>>
+UC1 <.. EXT3 : <<extend>>
+UC2 <.. EXT4 : <<extend>>
+
+' ============================
+' Notes
+' ============================
+note right of INC1
+  Vérifie :
+  - Déplacement diagonal uniquement
+  - Case d'arrivée vide
+  - Pion avance seulement (sauf prise)
+  - Pas de saut de pièce alliée
+end note
+
+note right of INC6
+  Fin de partie si :
+  - Plus de pièces
+  - Toutes les pièces bloquées
+  - 25 coups dames sans prise
+  - Position répétée 3 fois
+end note
+
+note right of INC5
+  Si promotion lors d'une prise,
+  le pion ne continue PAS à
+  prendre en tant que dame ce tour
+end note
+
+@enduml
