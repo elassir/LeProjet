@@ -41,7 +41,7 @@ public class TestPartieApp extends Application {
     public void start(Stage stageBlanc) {
 
         // ── Arbitre partagé ────────────────────────────────────────────
-        arb = new arbitre("Alice", "Bob");
+        arb = new arbitre("Blanc", "Noir");
 
         // ── Fenêtre BLANC ──────────────────────────────────────────────
         damierBlanc = new DamierView(arb.getPlateau(), arb, Couleur.BLANC);
@@ -50,7 +50,7 @@ public class TestPartieApp extends Application {
         lblInfoBlanc = creerLabel("En attente du début de la partie…");
 
         Scene sceneBlanc = creerScene(damierBlanc, lblEtatBlanc, lblTourBlanc, lblInfoBlanc);
-        stageBlanc.setTitle("♟ Joueur BLANC – Alice");
+        stageBlanc.setTitle("♟ Joueur BLANC");
         stageBlanc.setScene(sceneBlanc);
         stageBlanc.setX(50);
         stageBlanc.setY(50);
@@ -63,7 +63,7 @@ public class TestPartieApp extends Application {
         lblInfoNoir = creerLabel("En attente du début de la partie…");
 
         Scene sceneNoir = creerScene(damierNoir, lblEtatNoir, lblTourNoir, lblInfoNoir);
-        stageNoir.setTitle("♟ Joueur NOIR – Bob");
+        stageNoir.setTitle("♟ Joueur NOIR");
         stageNoir.setScene(sceneNoir);
         stageNoir.setX(650);
         stageNoir.setY(50);

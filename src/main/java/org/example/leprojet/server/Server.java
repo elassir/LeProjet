@@ -1,4 +1,6 @@
 package org.example.leprojet.server;
+import org.example.leprojet.Action;
+import org.example.leprojet.arbitre;
 import org.example.leprojet.common.Message;
 
 import java.io.IOException;
@@ -8,11 +10,12 @@ import java.util.List;
 public class Server {
     private int port;
     private List<ConnectedClient> clients;
+    private arbitre arbitre;
 
     public Server(int port) throws IOException {
         this.port = port;
         this.clients = new ArrayList<>();
-
+        this.arbitre = new arbitre("Blanc","Noir");
         new Thread(new Connection(this)).start();
     }
 
@@ -21,7 +24,7 @@ public class Server {
 
     public synchronized void addClient(ConnectedClient newClient) {
         clients.add(newClient);
-        broadcastMessage(new Message("Serveur", "Nouveau client connecté (ID: " + newClient.getId() + ")"), -1); // [cite: 159]
+        broadcastMessage(new Message("Serveur", Action.CONNEXIONNOUVEAUCLIENT,"Nouveau client connecté (ID: " + newClient.getId() + ")"), -1); // [cite: 159]
     }
 
     public synchronized void broadcastMessage(Message mess, int id) {
@@ -35,6 +38,6 @@ public class Server {
     public synchronized void disconnectedClient(ConnectedClient discClient) {
         discClient.closeClient();
         clients.remove(discClient);
-        broadcastMessage(new Message("Serveur", "Le client " + discClient.getId() + " est parti."), -1);
+        broadcastMessage(new Message("Serveur", Action.DECONNEXIONCLIENT,"Le client " + discClient.getId() + " est parti."), -1);
     }
 }

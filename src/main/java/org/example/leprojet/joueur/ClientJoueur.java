@@ -1,6 +1,7 @@
 package org.example.leprojet.joueur;
 
 import javafx.scene.layout.StackPane;
+import org.example.leprojet.Action;
 import org.example.leprojet.DamierView;
 import org.example.leprojet.common.Message;
 import javafx.application.Application;
@@ -15,7 +16,7 @@ public class ClientJoueur extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         InterfaceGraphique interfaceGraphique = new InterfaceGraphique();
-        interfaceGraphique.printNewMessage(new Message("System", "Hello world!!!!!"));
+        interfaceGraphique.printNewMessage(new Message("System", Action.DEBUTPARTIE, "Hello world!!!!!"));
         StackPane root = new StackPane();
         root.getChildren().add(new DamierView());
         root.getChildren().add(interfaceGraphique);
