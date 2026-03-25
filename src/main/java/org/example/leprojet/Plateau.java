@@ -90,6 +90,7 @@ public class Plateau {
      * @param piece
      * @param nouvellePosition
      */
+
     public void deplacerPiece(Piece piece, Case nouvellePosition) {
         piece.getPosition().setPiece(null);
         piece.setPosition(nouvellePosition);
@@ -101,6 +102,7 @@ public class Plateau {
      *
      * @param piece
      */
+
     public void supprimerPiece(Piece piece) {
         piece.getPosition().setPiece(null);
         if (piece.getCouleur() == Couleur.NOIR) {

@@ -1,17 +1,17 @@
-package org.example.leprojet.client;
+package org.example.leprojet.joueur;
 
 import org.example.leprojet.common.Message;
 
 import java.io.ObjectInputStream;
 import java.net.Socket;
 
-public class ClientReceive implements Runnable {
+public class JoueurReceive implements Runnable {
 
-    private Client client;
+    private Joueur joueur;
     private Socket socket;
 
-    public ClientReceive(Client client, Socket socket) {
-        this.client = client;
+    public JoueurReceive(Joueur joueur, Socket socket) {
+        this.joueur = joueur;
         this.socket = socket;
     }
 
@@ -22,11 +22,11 @@ public class ClientReceive implements Runnable {
             while (true) {
                 Message mess = (Message) in.readObject();
                 if (mess != null) {
-                    client.messageReceived(mess);
+                    joueur.messageReceived(mess);
                 }
             }
         } catch (Exception e) {
-            client.disconnectedServer();
+            joueur.disconnectedServer();
         }
     }
 }

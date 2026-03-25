@@ -1,0 +1,235 @@
+@startuml Classe_JeuDeDames
+
+title Diagramme de Classe - Jeu de Dames JavaFX
+
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+
+' ============================================
+' CLASSES ABSTRAITES ET HÉRITAGE - MODÈLE
+' ============================================
+
+abstract class Case {
+    # ligne : int
+    # colonne : int
+    # piece : Piece
+    + getPosition() : String
+    + getPiece() : Piece
+    + setPiece(p : Piece) : void
+    + estOccupee() : boolean
+    + estLibre() : boolean
+    + {abstract} estJouable() : boolean
+}
+
+class CaseNoire extends Case {
+    - surbrillance : boolean
+    + estJouable() : boolean
+    + setSurbrillance(val : boolean) : void
+    + getSurbrillance() : boolean
+}
+
+class CaseBlanche extends Case {
+    + estJouable() : boolean
+}
+
+abstract class Piece {
+    # couleur : Couleur
+    # position : CaseNoire
+    + getCouleur() : Couleur
+    + getPosition() : CaseNoire
+    + setPosition(c : CaseNoire) : void
+    + {abstract} isCoupValide(arrivee : CaseNoire, plateau : Plateau) : boolean
+    + {abstract} coupObligatoire(plateau : Plateau) : Rafle
+    + {abstract} deplacementsPossibles(plateau : Plateau) : List<CaseNoire>
+}
+
+class Pion extends Piece {
+    + isCoupValide(arrivee : CaseNoire, plateau : Plateau) : boolean
+    + coupObligatoire(plateau : Plateau) : Rafle
+    + deplacementsPossibles(plateau : Plateau) : List<CaseNoire>
+    + peutEtrePromu() : boolean
+}
+
+class Dame extends Piece {
+    + isCoupValide(arrivee : CaseNoire, plateau : Plateau) : boolean
+    + coupObligatoire(plateau : Plateau) : Rafle
+    + deplacementsPossibles(plateau : Plateau) : List<CaseNoire>
+}
+
+abstract class Joueur {
+    # nom : String
+    # couleur : Couleur
+    # pieces : List<Piece>
+    + getNom() : String
+    + getCouleur() : Couleur
+    + getPieces() : List<Piece>
+    + ajouterPiece(p : Piece) : void
+    + retirerPiece(p : Piece) : void
+    + getNbPieces() : int
+    + debut(plateau : Plateau) : void
+    + {abstract} jouer(plateau : Plateau, arbitre : Arbitre) : void
+}
+
+class Humain extends Joueur {
+    + jouer(plateau : Plateau, arbitre : Arbitre) : void
+}
+
+class Ordinateur extends Joueur {
+    - difficulte : int
+    + jouer(plateau : Plateau, arbitre : Arbitre) : void
+}
+
+' ============================================
+' ENUMERATION
+' ============================================
+
+enum Couleur {
+    BLANC
+    NOIR
+}
+
+' ============================================
+' CLASSES MÉTIER
+' ============================================
+
+class Plateau {
+    - grille : Case[10][10]
+    - taille : int = 10
+    + initialiser() : void
+    + getCase(ligne : int, col : int) : Case
+    + getCaseNoire(ligne : int, col : int) : CaseNoire
+    + placerPiece(p : Piece, c : CaseNoire) : void
+    + retirerPiece(c : CaseNoire) : Piece
+    + deplacerPiece(origine : CaseNoire, dest : CaseNoire) : void
+    + promouvoir(pion : Pion) : Dame
+    + getPieces(couleur : Couleur) : List<Piece>
+    + compterPieces(couleur : Couleur) : int
+}
+
+class Rafle {
+    - caseDebut : CaseNoire
+    - casePrise : CaseNoire
+    - casesSuivantes : List<Rafle>
+    - nbPrises : int
+    + getCaseDebut() : CaseNoire
+    + getCasePrise() : CaseNoire
+    + getCasesSuivantes() : List<Rafle>
+    + ajouterSuite(r : Rafle) : void
+    + getNbPrises() : int
+    + getRafleMaximale() : List<Rafle>
+}
+
+class Arbitre {
+    - plateau : Plateau
+    + isCoupValide(piece : Piece, arrivee : CaseNoire) : boolean
+    + coupObligatoire(joueur : Joueur) : List<Rafle>
+    + rafleMaximale(joueur : Joueur) : List<Rafle>
+    + verifierPromotion(piece : Piece) : boolean
+    + partieTerminee(j1 : Joueur, j2 : Joueur) : boolean
+    + verifierMatchNul(historique : HistoriqueCoup) : boolean
+    + verifierVictoire(joueur : Joueur) : boolean
+    + joueurBloque(joueur : Joueur) : boolean
+}
+
+class HistoriqueCoup {
+    - coups : List<Coup>
+    + ajouterCoup(c : Coup) : void
+    + annulerDernierCoup() : Coup
+    + getCoups() : List<Coup>
+    + getNbCoups() : int
+    + getCoupsSansPrise() : int
+    + getPositionsRepetees() : int
+}
+
+class Coup {
+    - origine : CaseNoire
+    - destination : CaseNoire
+    - pieceJouee : Piece
+    - piecesPrises : List<Piece>
+    - promotion : boolean
+    + getOrigine() : CaseNoire
+    + getDestination() : CaseNoire
+    + getPieceJouee() : Piece
+    + getPiecesPrises() : List<Piece>
+    + estUnePrise() : boolean
+    + estPromotion() : boolean
+}
+
+' ============================================
+' CLASSES VUE (JavaFX)
+' ============================================
+
+class JeuDeDamesWindow {
+    - plateau : Plateau
+    - arbitre : Arbitre
+    - joueur1 : Joueur
+    - joueur2 : Joueur
+    - joueurActif : Joueur
+    - historique : HistoriqueCoup
+    - caseSelectionnee : CaseNoire
+    + initialiserPartie() : void
+    + gererClic(ligne : int, col : int) : void
+    + changerTour() : void
+    + afficherPlateau() : void
+    + afficherResultat(vainqueur : Joueur) : void
+    + mettreAJour() : void
+}
+
+class NouvellePartieWindow {
+    - choixJoueur1 : String
+    - choixJoueur2 : String
+    + afficher() : void
+    + getChoixJoueur1() : String
+    + getChoixJoueur2() : String
+    + lancerPartie() : void
+}
+
+class APropos {
+    + afficher() : void
+}
+
+' ============================================
+' RELATIONS
+' ============================================
+
+' Plateau (composition) contient 100 Cases
+Plateau *-- "100" Case : contient >
+
+' CaseNoire peut contenir 0..1 Pièce
+CaseNoire o-- "0..1" Piece : contient >
+
+' Joueur possède des Pièces
+Joueur "1" o-- "0..20" Piece : possède >
+
+' Piece a une Couleur
+Piece --> Couleur
+
+' Joueur a une Couleur
+Joueur --> Couleur
+
+' Rafle référence des CaseNoire
+Rafle --> "1" CaseNoire : caseDebut
+Rafle --> "0..1" CaseNoire : casePrise
+Rafle --> "*" Rafle : casesSuivantes
+
+' Coup référence
+Coup --> "1" CaseNoire : origine
+Coup --> "1" CaseNoire : destination
+Coup --> "1" Piece : pièce jouée
+Coup --> "*" Piece : pièces prises
+
+' HistoriqueCoup contient des Coups
+HistoriqueCoup o-- "*" Coup : enregistre >
+
+' Arbitre utilise Plateau
+Arbitre --> "1" Plateau : contrôle >
+
+' JeuDeDamesWindow orchestre tout
+JeuDeDamesWindow --> "1" Plateau
+JeuDeDamesWindow --> "1" Arbitre
+JeuDeDamesWindow --> "2" Joueur
+JeuDeDamesWindow --> "1" HistoriqueCoup
+JeuDeDamesWindow ..> NouvellePartieWindow : ouvre >
+JeuDeDamesWindow ..> APropos : ouvre >
+
+@enduml

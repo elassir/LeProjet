@@ -3,7 +3,7 @@ module org.example.leprojet {
     requires javafx.fxml;
     requires javafx.web;
 
-    opens org.example.leprojet.client to javafx.graphics, javafx.fxml;
+    opens org.example.leprojet.joueur to javafx.graphics, javafx.fxml;
 
     requires org.controlsfx.controls;
     requires com.dlsc.formsfx;
