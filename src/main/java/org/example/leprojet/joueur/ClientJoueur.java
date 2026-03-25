@@ -1,25 +1,25 @@
-package org.example.leprojet.client;
+package org.example.leprojet.joueur;
 
+import javafx.scene.layout.StackPane;
 import org.example.leprojet.common.Message;
 import javafx.application.Application;
-import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import java.io.IOException;
 
-public class MainGui extends Application {
-    public MainGui() {}
+public class ClientJoueur extends Application {
+    public ClientJoueur() {}
 
     @Override
     public void start(Stage stage) throws IOException {
-        ClientPanel clientPanel = new ClientPanel();
-        clientPanel.printNewMessage(new Message("System", "Hello world!!!!!"));
-        Group root = new Group();
-        root.getChildren().add(clientPanel);
+        InterfaceGraphique interfaceGraphique = new InterfaceGraphique();
+        interfaceGraphique.printNewMessage(new Message("System", "Hello world!!!!!"));
+        StackPane root = new StackPane();
+        root.getChildren().add(interfaceGraphique);
 
-        Scene scene = new Scene(root, 600, 500);
-        stage.setTitle("TP4 - Client");
+        Scene scene = new Scene(root, 800, 600);
+        stage.setTitle("Plateau");
         stage.setScene(scene);
         stage.show();
 
@@ -32,11 +32,11 @@ public class MainGui extends Application {
             port = Integer.parseInt(getParameters().getRaw().get(1));
         }
 
-        Client client = new Client(host, port);
+        Joueur joueur = new Joueur(host, port);
 
         // lien bidirectionnel
-        clientPanel.setClient(client);
-        client.setView(clientPanel);
+        interfaceGraphique.setClient(joueur);
+        joueur.setView(interfaceGraphique);
     }
 
     public static void main(String[] args) {
