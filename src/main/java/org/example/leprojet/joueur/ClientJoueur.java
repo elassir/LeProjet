@@ -1,6 +1,7 @@
 package org.example.leprojet.joueur;
 
 import javafx.scene.layout.StackPane;
+import org.example.leprojet.DamierView;
 import org.example.leprojet.common.Message;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -16,10 +17,11 @@ public class ClientJoueur extends Application {
         InterfaceGraphique interfaceGraphique = new InterfaceGraphique();
         interfaceGraphique.printNewMessage(new Message("System", "Hello world!!!!!"));
         StackPane root = new StackPane();
+        root.getChildren().add(new DamierView());
         root.getChildren().add(interfaceGraphique);
 
-        Scene scene = new Scene(root, 800, 600);
-        stage.setTitle("Plateau");
+        Scene scene = new Scene(root, 760, 820);
+        stage.setTitle("Jeu de dames");
         stage.setScene(scene);
         stage.show();
 
