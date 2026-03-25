@@ -1,5 +1,7 @@
 package org.example.leprojet;
 
+import javafx.scene.shape.Circle;
+
 public class Pion {
     private Couleur.CouleurEnum couleur;
     private int x;

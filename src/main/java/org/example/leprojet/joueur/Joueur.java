@@ -1,4 +1,4 @@
-package org.example.leprojet.client;
+package org.example.leprojet.joueur;
 
 import org.example.leprojet.common.Message;
 
@@ -6,17 +6,17 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-public class Client {
+public class Joueur {
     private Socket socket;
     private ObjectOutputStream out;
-    private ClientPanel view;
+    private InterfaceGraphique view;
 
-    public Client(String address, int port) throws IOException {
+    public Joueur(String address, int port) throws IOException {
         this.socket = new Socket(address, port);
         this.out = new ObjectOutputStream(socket.getOutputStream());
 
 
-        new Thread(new ClientReceive(this, socket)).start();
+        new Thread(new JoueurReceive(this, socket)).start();
 //        new Thread(new ClientSend(socket, out)).start();
     }
 
@@ -43,7 +43,7 @@ public class Client {
         } catch (IOException e) { e.printStackTrace(); }
     }
 
-    public void setView(ClientPanel view) {
+    public void setView(InterfaceGraphique view) {
         this.view = view;
     }
 }
