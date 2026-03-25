@@ -13,6 +13,6 @@ module org.example.leprojet {
     requires eu.hansolo.tilesfx;
     requires com.almasb.fxgl.all;
 
-    opens org.example.leprojet to javafx.fxml;
+    opens org.example.leprojet to javafx.fxml, javafx.graphics;
     exports org.example.leprojet;
 }
