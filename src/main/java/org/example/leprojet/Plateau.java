@@ -114,7 +114,6 @@ public class Plateau {
 
     @Override
     public Plateau clone() {
-        // TODO Auto-generated method stub
         Plateau plateau = new Plateau();
 
         for (Piece p : this.getNoires()) {
@@ -127,7 +126,7 @@ public class Plateau {
             }
             if (piece != null) {
                 position.setPiece(piece);
-                plateau.noires.add(p);
+                plateau.noires.add(piece);
             }
         }
 
@@ -141,7 +140,7 @@ public class Plateau {
             }
             if (piece != null) {
                 position.setPiece(piece);
-                plateau.blanches.add(p);
+                plateau.blanches.add(piece);
             }
         }
 

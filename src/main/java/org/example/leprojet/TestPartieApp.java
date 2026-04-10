@@ -6,51 +6,75 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 /**
- * Application de test locale (sans serveur) pour vérifier les états de la partie.
+ * Application de test locale (sans serveur).
  * <p>
- * Ouvre <b>2 fenêtres</b> : une pour le joueur BLANC, une pour le joueur NOIR.
+ * Affiche un menu d'accueil avec saisie de pseudos, puis ouvre 2 fenêtres :
+ * une pour le joueur BLANC et une pour le joueur NOIR.
  * Les deux partagent le même arbitre et le même plateau.
- * Chaque mouvement effectué dans une fenêtre est immédiatement visible dans l'autre.
- * <p>
- * Chaque joueur ne peut cliquer que quand c'est son tour.
  */
 public class TestPartieApp extends Application {
 
+    private static final int PIONS_DEPART = 20;
+
     private arbitre arb;
 
-    // ── Fenêtre Joueur BLANC ───────────────────────────────────────────
+    // ── Fenêtre BLANC ──────────────────────────────────────────────────
     private DamierView damierBlanc;
-    private Label lblEtatBlanc;
     private Label lblTourBlanc;
-    private Label lblInfoBlanc;
+    private Label lblScoreBlanc;
+    private Label lblChaineBlanc;
 
-    // ── Fenêtre Joueur NOIR ────────────────────────────────────────────
+    // ── Fenêtre NOIR ───────────────────────────────────────────────────
     private DamierView damierNoir;
-    private Label lblEtatNoir;
     private Label lblTourNoir;
-    private Label lblInfoNoir;
+    private Label lblScoreNoir;
+    private Label lblChaineNoir;
+
+    private String nomBlanc;
+    private String nomNoir;
 
     @Override
-    public void start(Stage stageBlanc) {
+    public void start(Stage primaryStage) {
+        MenuView menu = new MenuView();
+        menu.setOnLocalStart((pseudoBlanc, pseudoNoir) -> {
+            nomBlanc = pseudoBlanc;
+            nomNoir = pseudoNoir;
+            primaryStage.close();
+            lancerPartie();
+        });
 
-        // ── Arbitre partagé ────────────────────────────────────────────
-        arb = new arbitre("Alice", "Bob");
+        Scene menuScene = new Scene(menu, 600, 450);
+        primaryStage.setTitle("♟ Jeu de Dames — Menu");
+        primaryStage.setScene(menuScene);
+        primaryStage.show();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  Lancement de la partie
+    // ─────────────────────────────────────────────────────────────────────
+
+    private void lancerPartie() {
+        arb = new arbitre(nomBlanc, nomNoir);
 
         // ── Fenêtre BLANC ──────────────────────────────────────────────
+        Stage stageBlanc = new Stage();
         damierBlanc = new DamierView(arb.getPlateau(), arb, Couleur.BLANC);
-        lblEtatBlanc = creerLabel("État : " + arb.getEtat());
-        lblTourBlanc = creerLabel("Tour : —");
-        lblInfoBlanc = creerLabel("En attente du début de la partie…");
+        lblTourBlanc = creerLabelTour();
+        lblScoreBlanc = creerLabelScore();
+        lblChaineBlanc = creerLabelChaine();
 
-        Scene sceneBlanc = creerScene(damierBlanc, lblEtatBlanc, lblTourBlanc, lblInfoBlanc);
-        stageBlanc.setTitle("♟ Joueur BLANC – Alice");
+        Scene sceneBlanc = creerScene(damierBlanc, lblTourBlanc, lblScoreBlanc, lblChaineBlanc, nomBlanc, Couleur.BLANC);
+        stageBlanc.setTitle("♟ " + nomBlanc + " (BLANC)");
         stageBlanc.setScene(sceneBlanc);
         stageBlanc.setX(50);
         stageBlanc.setY(50);
@@ -58,17 +82,17 @@ public class TestPartieApp extends Application {
         // ── Fenêtre NOIR ───────────────────────────────────────────────
         Stage stageNoir = new Stage();
         damierNoir = new DamierView(arb.getPlateau(), arb, Couleur.NOIR);
-        lblEtatNoir = creerLabel("État : " + arb.getEtat());
-        lblTourNoir = creerLabel("Tour : —");
-        lblInfoNoir = creerLabel("En attente du début de la partie…");
+        lblTourNoir = creerLabelTour();
+        lblScoreNoir = creerLabelScore();
+        lblChaineNoir = creerLabelChaine();
 
-        Scene sceneNoir = creerScene(damierNoir, lblEtatNoir, lblTourNoir, lblInfoNoir);
-        stageNoir.setTitle("♟ Joueur NOIR – Bob");
+        Scene sceneNoir = creerScene(damierNoir, lblTourNoir, lblScoreNoir, lblChaineNoir, nomNoir, Couleur.NOIR);
+        stageNoir.setTitle("♟ " + nomNoir + " (NOIR)");
         stageNoir.setScene(sceneNoir);
-        stageNoir.setX(650);
+        stageNoir.setX(700);
         stageNoir.setY(50);
 
-        // ── Callback : quand un coup est joué, rafraîchir les 2 vues ──
+        // ── Callback ───────────────────────────────────────────────────
         Runnable rafraichirTout = () -> {
             damierBlanc.rafraichir();
             damierNoir.rafraichir();
@@ -77,125 +101,172 @@ public class TestPartieApp extends Application {
         damierBlanc.setOnCoupJoue(rafraichirTout);
         damierNoir.setOnCoupJoue(rafraichirTout);
 
-        // ── Affichage ──────────────────────────────────────────────────
         stageBlanc.show();
         stageNoir.show();
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Construction d'une scène avec boutons + infos + damier
+    //  Construction de la scène
     // ─────────────────────────────────────────────────────────────────────
 
-    private Scene creerScene(DamierView damier, Label lblEtat, Label lblTour, Label lblInfo) {
+    private Scene creerScene(DamierView damier, Label lblTour, Label lblScore,
+                             Label lblChaine, String pseudo, Couleur couleur) {
 
-        Button btnDebut = new Button("▶  Début Partie");
-        btnDebut.setStyle("-fx-font-size: 13; -fx-padding: 6 16; "
-                + "-fx-background-color: #4caf50; -fx-text-fill: white; -fx-background-radius: 8;");
+        // ── Header : pseudo + couleur ──────────────────────────────────
+        String emoji = (couleur == Couleur.BLANC) ? "⚪" : "⚫";
+        Label lblPseudo = new Label(emoji + "  " + pseudo);
+        lblPseudo.setFont(Font.font("System", FontWeight.BOLD, 16));
+        lblPseudo.setStyle("-fx-text-fill: #3f2a1d;");
 
-        Button btnFin = new Button("⏹  Fin Partie");
-        btnFin.setStyle("-fx-font-size: 13; -fx-padding: 6 16; "
-                + "-fx-background-color: #f44336; -fx-text-fill: white; -fx-background-radius: 8;");
-
+        // ── Boutons ────────────────────────────────────────────────────
+        Button btnDebut = creerBouton("▶ Jouer", "#4caf50");
+        Button btnFin = creerBouton("⏹ Terminer", "#e53935");
         btnDebut.setOnAction(e -> onDebutPartie());
         btnFin.setOnAction(e -> onFinPartie());
 
-        HBox boutonsBox = new HBox(16, btnDebut, btnFin);
-        boutonsBox.setAlignment(Pos.CENTER);
-        boutonsBox.setPadding(new Insets(4));
+        HBox btnBox = new HBox(10, btnDebut, btnFin);
+        btnBox.setAlignment(Pos.CENTER);
 
-        VBox infoBox = new VBox(3, lblEtat, lblTour, lblInfo);
-        infoBox.setAlignment(Pos.CENTER);
-        infoBox.setPadding(new Insets(4));
-        infoBox.setStyle("-fx-background-color: rgba(0,0,0,0.05); -fx-background-radius: 8;");
+        // ── Header bar ─────────────────────────────────────────────────
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox header = new HBox(10, lblPseudo, spacer, btnBox);
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.setPadding(new Insets(6, 12, 6, 12));
+        header.setStyle("-fx-background-color: rgba(255,255,255,0.5); -fx-background-radius: 8;");
 
-        VBox root = new VBox(6, infoBox, damier, boutonsBox);
-        root.setAlignment(Pos.CENTER);
-        root.setPadding(new Insets(8));
-        root.setStyle("-fx-background-color: linear-gradient(to bottom, #f6eee3, #dfd1bc);");
+        // ── Info bar : tour + score + chaîne ───────────────────────────
+        HBox infoBar = new HBox(16, lblTour, lblScore, lblChaine);
+        infoBar.setAlignment(Pos.CENTER);
+        infoBar.setPadding(new Insets(6));
+
+        // ── Assemblage ─────────────────────────────────────────────────
+        VBox root = new VBox(6, header, new Separator(), infoBar, damier);
+        root.setAlignment(Pos.TOP_CENTER);
+        root.setPadding(new Insets(10));
+        root.setStyle("-fx-background-color: linear-gradient(to bottom, #ede0d0, #c9b99a);");
 
         return new Scene(root);
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Actions des boutons
+    //  Actions
     // ─────────────────────────────────────────────────────────────────────
 
     private void onDebutPartie() {
-        if (arb.getEtat() == EtatPartie.EN_COURS) return; // déjà démarrée
-
+        if (arb.getEtat() == EtatPartie.EN_COURS) return;
         arb.initialiserPartie();
 
         damierBlanc.setPlateau(arb.getPlateau());
         damierNoir.setPlateau(arb.getPlateau());
         mettreAJourLabels();
-
-        System.out.println("[TEST] Partie démarrée !");
-        System.out.println("[TEST] " + arb);
     }
 
     private void onFinPartie() {
-        if (arb.getEtat() != EtatPartie.EN_COURS) {
-            System.out.println("[TEST] La partie n'est pas en cours.");
-            return;
-        }
+        if (arb.getEtat() != EtatPartie.EN_COURS) return;
 
-        // Simuler la victoire des blancs
         Plateau p = arb.getPlateau();
         while (!p.getNoires().isEmpty()) {
             p.supprimerPiece(p.getNoires().getFirst());
         }
         arb.verifierFinDePartie();
+        SoundManager.playVictory();
 
         damierBlanc.rafraichir();
         damierNoir.rafraichir();
         mettreAJourLabels();
-
-        System.out.println("[TEST] Fin de partie simulée !");
-        Joueur gagnant = arb.getGagnant();
-        if (gagnant != null) {
-            System.out.println("[TEST] Gagnant : " + gagnant);
-        }
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Mise à jour des labels des 2 fenêtres
+    //  Mise à jour des labels
     // ─────────────────────────────────────────────────────────────────────
 
     private void mettreAJourLabels() {
-        String etatTxt = "État : " + arb.getEtat();
-        String tourTxt = "Tour : "
-                + (arb.getJoueurCourant() != null ? arb.getJoueurCourant().getNom() : "—");
-
+        Joueur courant = arb.getJoueurCourant();
         Joueur gagnant = arb.getGagnant();
-        String infoTxt;
+
+        int nbBlanches = arb.getPlateau().getBlanches().size();
+        int nbNoires = arb.getPlateau().getNoires().size();
+        int prisesBlanc = PIONS_DEPART - nbNoires;  // pièces noires mangées par blanc
+        int prisesNoir = PIONS_DEPART - nbBlanches;  // pièces blanches mangées par noir
+
+        String chaine = arb.isEnChaineDePrise() ? "⚡ Chaîne de prises !" : "";
+
+        // ── BLANC ──────────────────────────────────────────────────────
         if (gagnant != null) {
-            infoTxt = "🏆 Gagnant : " + gagnant.getNom()
-                    + "  (B:" + arb.getPlateau().getBlanches().size()
-                    + " / N:" + arb.getPlateau().getNoires().size() + ")";
+            lblTourBlanc.setText(gagnant.getCouleur() == Couleur.BLANC
+                    ? "🏆 Victoire !"
+                    : "💀 Défaite");
+            lblTourBlanc.setStyle(gagnant.getCouleur() == Couleur.BLANC
+                    ? styleTourActif() : styleTourInactif());
+        } else if (courant != null && courant.getCouleur() == Couleur.BLANC) {
+            lblTourBlanc.setText("🟢 C'est votre tour !");
+            lblTourBlanc.setStyle(styleTourActif());
         } else {
-            infoTxt = "Pièces – B:" + arb.getPlateau().getBlanches().size()
-                    + "  N:" + arb.getPlateau().getNoires().size();
+            lblTourBlanc.setText("🔴 Tour adverse");
+            lblTourBlanc.setStyle(styleTourInactif());
         }
+        lblScoreBlanc.setText("⚔ Prises : " + prisesBlanc + "   |   Restantes : " + nbBlanches);
+        lblChaineBlanc.setText(chaine);
 
-        // Fenêtre BLANC
-        lblEtatBlanc.setText(etatTxt);
-        lblTourBlanc.setText(tourTxt);
-        lblInfoBlanc.setText(infoTxt);
-
-        // Fenêtre NOIR
-        lblEtatNoir.setText(etatTxt);
-        lblTourNoir.setText(tourTxt);
-        lblInfoNoir.setText(infoTxt);
-    }
-
-    private Label creerLabel(String texte) {
-        Label l = new Label(texte);
-        l.setFont(Font.font("System", FontWeight.SEMI_BOLD, 12));
-        return l;
+        // ── NOIR ───────────────────────────────────────────────────────
+        if (gagnant != null) {
+            lblTourNoir.setText(gagnant.getCouleur() == Couleur.NOIR
+                    ? "🏆 Victoire !"
+                    : "💀 Défaite");
+            lblTourNoir.setStyle(gagnant.getCouleur() == Couleur.NOIR
+                    ? styleTourActif() : styleTourInactif());
+        } else if (courant != null && courant.getCouleur() == Couleur.NOIR) {
+            lblTourNoir.setText("🟢 C'est votre tour !");
+            lblTourNoir.setStyle(styleTourActif());
+        } else {
+            lblTourNoir.setText("🔴 Tour adverse");
+            lblTourNoir.setStyle(styleTourInactif());
+        }
+        lblScoreNoir.setText("⚔ Prises : " + prisesNoir + "   |   Restantes : " + nbNoires);
+        lblChaineNoir.setText(chaine);
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Main
+    //  Factory labels / boutons
+    // ─────────────────────────────────────────────────────────────────────
+
+    private Label creerLabelTour() {
+        Label l = new Label("En attente…");
+        l.setFont(Font.font("System", FontWeight.BOLD, 13));
+        return l;
+    }
+
+    private Label creerLabelScore() {
+        Label l = new Label("");
+        l.setFont(Font.font("System", FontWeight.NORMAL, 12));
+        l.setStyle("-fx-text-fill: #5d4037;");
+        return l;
+    }
+
+    private Label creerLabelChaine() {
+        Label l = new Label("");
+        l.setFont(Font.font("System", FontWeight.BOLD, 12));
+        l.setStyle("-fx-text-fill: #e65100;");
+        return l;
+    }
+
+    private Button creerBouton(String texte, String couleur) {
+        Button btn = new Button(texte);
+        btn.setStyle("-fx-font-size: 11; -fx-padding: 5 14; "
+                + "-fx-background-color: " + couleur + "; -fx-text-fill: white; "
+                + "-fx-background-radius: 6; -fx-cursor: hand;");
+        return btn;
+    }
+
+    private String styleTourActif() {
+        return "-fx-text-fill: #2e7d32; -fx-font-weight: bold;";
+    }
+
+    private String styleTourInactif() {
+        return "-fx-text-fill: #b71c1c; -fx-font-weight: bold;";
+    }
+
     // ─────────────────────────────────────────────────────────────────────
 
     public static void main(String[] args) {

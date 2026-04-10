@@ -1,42 +1,48 @@
 package org.example.leprojet.joueur;
 
-import javafx.scene.layout.StackPane;
-import org.example.leprojet.common.Message;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import org.example.leprojet.MenuView;
 
 import java.io.IOException;
 
+/**
+ * Point d'entrée JavaFX d'un joueur de dames.
+ * <p>
+ * Affiche un menu d'accueil pour saisir le pseudo et les paramètres de connexion,
+ * puis se connecte au serveur et affiche le damier.
+ */
 public class ClientJoueur extends Application {
-    public ClientJoueur() {}
 
     @Override
-    public void start(Stage stage) throws IOException {
-        InterfaceGraphique interfaceGraphique = new InterfaceGraphique();
-        interfaceGraphique.printNewMessage(new Message("System", "Hello world!!!!!"));
-        StackPane root = new StackPane();
-        root.getChildren().add(interfaceGraphique);
+    public void start(Stage stage) {
+        MenuView menu = new MenuView();
 
-        Scene scene = new Scene(root, 800, 600);
-        stage.setTitle("Plateau");
-        stage.setScene(scene);
+        menu.setOnNetworkStart((pseudo, host, port) -> {
+            try {
+                lancerModeReseau(stage, pseudo, host, port);
+            } catch (IOException e) {
+                System.err.println("[CLIENT] Impossible de se connecter : " + e.getMessage());
+            }
+        });
+
+        Scene menuScene = new Scene(menu, 600, 450);
+        stage.setTitle("♟ Jeu de Dames — Connexion");
+        stage.setScene(menuScene);
         stage.show();
+    }
 
-        // Arguments: host port
-        String host = "127.0.0.1";
-        int port = 6000;
-
-        if (getParameters().getRaw().size() >= 2) {
-            host = getParameters().getRaw().get(0);
-            port = Integer.parseInt(getParameters().getRaw().get(1));
-        }
+    private void lancerModeReseau(Stage stage, String pseudo, String host, int port) throws IOException {
+        InterfaceGraphique gui = new InterfaceGraphique();
 
         Joueur joueur = new Joueur(host, port);
+        gui.setClient(joueur);
+        joueur.setView(gui);
 
-        // lien bidirectionnel
-        interfaceGraphique.setClient(joueur);
-        joueur.setView(interfaceGraphique);
+        Scene scene = new Scene(gui, 620, 680);
+        stage.setTitle("♟ Jeu de Dames — " + pseudo);
+        stage.setScene(scene);
     }
 
     public static void main(String[] args) {
