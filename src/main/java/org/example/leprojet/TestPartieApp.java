@@ -14,6 +14,13 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+import org.example.leprojet.core.Couleur;
+import org.example.leprojet.core.EtatPartie;
+import org.example.leprojet.core.JoueurPartie;
+import org.example.leprojet.core.Plateau;
+import org.example.leprojet.ui.DamierView;
+import org.example.leprojet.ui.MenuView;
+import org.example.leprojet.ui.SoundManager;
 
 /**
  * Application de test locale (sans serveur).
@@ -26,7 +33,7 @@ public class TestPartieApp extends Application {
 
     private static final int PIONS_DEPART = 20;
 
-    private arbitre arb;
+    private Arbitre arb;
 
     // ── Fenêtre BLANC ──────────────────────────────────────────────────
     private DamierView damierBlanc;
@@ -64,7 +71,7 @@ public class TestPartieApp extends Application {
     // ─────────────────────────────────────────────────────────────────────
 
     private void lancerPartie() {
-        arb = new arbitre(nomBlanc, nomNoir);
+        arb = new Arbitre(nomBlanc, nomNoir);
 
         // ── Fenêtre BLANC ──────────────────────────────────────────────
         Stage stageBlanc = new Stage();
@@ -182,8 +189,8 @@ public class TestPartieApp extends Application {
     // ─────────────────────────────────────────────────────────────────────
 
     private void mettreAJourLabels() {
-        Joueur courant = arb.getJoueurCourant();
-        Joueur gagnant = arb.getGagnant();
+        JoueurPartie courant = arb.getJoueurCourant();
+        JoueurPartie gagnant = arb.getGagnant();
 
         int nbBlanches = arb.getPlateau().getBlanches().size();
         int nbNoires = arb.getPlateau().getNoires().size();

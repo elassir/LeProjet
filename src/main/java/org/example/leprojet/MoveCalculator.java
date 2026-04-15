@@ -1,5 +1,11 @@
 package org.example.leprojet;
 
+import org.example.leprojet.core.Case;
+import org.example.leprojet.core.Couleur;
+import org.example.leprojet.core.Dame;
+import org.example.leprojet.core.Piece;
+import org.example.leprojet.core.Plateau;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,6 +31,10 @@ public class MoveCalculator {
 
     /**
      * Retourne la liste des cases où la pièce peut se déplacer (sans prise).
+     *
+     * @param piece piece source
+     * @param plateau plateau de jeu
+     * @return destinations de deplacement simple
      */
     public static List<Case> getDeplacementsPossibles(Piece piece, Plateau plateau) {
         if (piece instanceof Dame) {
@@ -86,6 +96,10 @@ public class MoveCalculator {
     /**
      * Retourne la liste des cases de destination pour une prise valide.
      * Gère les pions (distance 2) et les dames (prises longues).
+     *
+     * @param piece piece source
+     * @param plateau plateau de jeu
+     * @return destinations de prise possibles
      */
     public static List<Case> getPrisesPossibles(Piece piece, Plateau plateau) {
         if (piece instanceof Dame) {
@@ -168,6 +182,11 @@ public class MoveCalculator {
 
     /**
      * Vérifie qu'un déplacement simple est géométriquement valide.
+     *
+     * @param piece piece source
+     * @param destination case d'arrivee
+     * @param plateau plateau de jeu
+     * @return true si le deplacement est valide
      */
     public static boolean estDeplacementValide(Piece piece, Case destination, Plateau plateau) {
         if (!destination.estVide()) return false;
@@ -192,6 +211,12 @@ public class MoveCalculator {
      * Vérifie qu'une prise est géométriquement valide.
      * Pour un pion : distance 2, pièce adverse au milieu.
      * Pour une dame : prise longue sur la diagonale.
+     *
+     * @param piece piece qui capture
+     * @param piecePrise piece adverse capturee
+     * @param destination case d'arrivee
+     * @param plateau plateau de jeu
+     * @return true si la prise est valide
      */
     public static boolean estPriseValide(Piece piece, Piece piecePrise, Case destination, Plateau plateau) {
         if (!destination.estVide()) return false;
@@ -265,6 +290,9 @@ public class MoveCalculator {
      * Trouve la pièce adverse entre la position de départ et la destination.
      * Utilisé quand on reçoit un coup du réseau (lDep, cDep, lArr, cArr).
      *
+     * @param piece piece source
+     * @param destination case d'arrivee
+     * @param plateau plateau de jeu
      * @return la pièce prise, ou null si c'est un déplacement simple.
      */
     public static Piece trouverPiecePrise(Piece piece, Case destination, Plateau plateau) {
@@ -305,6 +333,10 @@ public class MoveCalculator {
 
     /**
      * Retourne true si au moins une des pièces de la liste a une prise possible.
+     *
+     * @param pieces pieces a analyser
+     * @param plateau plateau de jeu
+     * @return true si une prise existe
      */
     public static boolean aUnePrisePossible(List<Piece> pieces, Plateau plateau) {
         for (Piece piece : pieces) {
@@ -315,6 +347,10 @@ public class MoveCalculator {
 
     /**
      * Retourne true si au moins une des pièces de la liste a un mouvement (prise ou déplacement).
+     *
+     * @param pieces pieces a analyser
+     * @param plateau plateau de jeu
+     * @return true si un mouvement legal existe
      */
     public static boolean aUnMouvementPossible(List<Piece> pieces, Plateau plateau) {
         for (Piece piece : pieces) {

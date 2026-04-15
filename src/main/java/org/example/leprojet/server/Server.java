@@ -1,10 +1,10 @@
 package org.example.leprojet.server;
 
-import org.example.leprojet.Case;
 import org.example.leprojet.MoveCalculator;
-import org.example.leprojet.Piece;
-import org.example.leprojet.Plateau;
-import org.example.leprojet.arbitre;
+import org.example.leprojet.Arbitre;
+import org.example.leprojet.core.Case;
+import org.example.leprojet.core.Piece;
+import org.example.leprojet.core.Plateau;
 import org.example.leprojet.common.Message;
 import org.example.leprojet.common.MessageType;
 
@@ -24,8 +24,14 @@ public class Server {
 
     private final int port;
     private final List<ConnectedClient> clients;
-    private arbitre arb;
+    private Arbitre arb;
 
+    /**
+     * Cree un serveur de jeu et demarre le thread d'ecoute des connexions.
+     *
+     * @param port port TCP d'ecoute
+     * @throws IOException si la socket serveur ne peut pas etre creee
+     */
     public Server(int port) throws IOException {
         this.port = port;
         this.clients = new ArrayList<>();
@@ -33,10 +39,18 @@ public class Server {
         System.out.println("[SERVEUR] Démarré sur le port " + port);
     }
 
+    /**
+     * @return port TCP d'ecoute du serveur
+     */
     public int getPort() { return port; }
 
     // ── Connexion d'un client ──────────────────────────────────────────
 
+    /**
+     * Ajoute un client connecte, assigne sa couleur et demarre la partie a 2 joueurs.
+     *
+     * @param newClient client nouvellement connecte
+     */
     public synchronized void addClient(ConnectedClient newClient) {
         if (clients.size() >= 2) {
             newClient.sendMessage(new Message("Serveur", "Partie déjà pleine."));
@@ -61,7 +75,7 @@ public class Server {
     // ── Démarrage de la partie ─────────────────────────────────────────
 
     private void demarrerPartie() {
-        arb = new arbitre("BLANC", "NOIR");
+        arb = new Arbitre("BLANC", "NOIR");
         arb.initialiserPartie();
 
         broadcastToAll(Message.debutPartie());
@@ -70,6 +84,12 @@ public class Server {
 
     // ── Réception d'un message d'un client ─────────────────────────────
 
+    /**
+     * Route un message recu vers le traitement metier adapte.
+     *
+     * @param sender client emetteur
+     * @param mess message recu
+     */
     public synchronized void onMessageRecu(ConnectedClient sender, Message mess) {
         if (mess.getType() == MessageType.COUP) {
             traiterCoup(sender, mess);
@@ -142,6 +162,11 @@ public class Server {
 
     // ── Broadcast ──────────────────────────────────────────────────────
 
+    /**
+     * Diffuse un message a tous les clients connectes.
+     *
+     * @param mess message a diffuser
+     */
     public synchronized void broadcastToAll(Message mess) {
         for (ConnectedClient client : clients) {
             client.sendMessage(mess);
@@ -150,6 +175,11 @@ public class Server {
 
     // ── Déconnexion ────────────────────────────────────────────────────
 
+    /**
+     * Supprime un client deconnecte et notifie les autres clients.
+     *
+     * @param discClient client deconnecte
+     */
     public synchronized void disconnectedClient(ConnectedClient discClient) {
         discClient.closeClient();
         clients.remove(discClient);

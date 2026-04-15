@@ -1,5 +1,14 @@
 package org.example.leprojet;
 
+import org.example.leprojet.core.Case;
+import org.example.leprojet.core.Couleur;
+import org.example.leprojet.core.Dame;
+import org.example.leprojet.core.EtatPartie;
+import org.example.leprojet.core.JoueurPartie;
+import org.example.leprojet.core.Piece;
+import org.example.leprojet.core.Pion;
+import org.example.leprojet.core.Plateau;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,14 +26,14 @@ import java.util.List;
  *   <li>détecter la fin de partie</li>
  * </ul>
  */
-public class arbitre {
+public class Arbitre {
 
     private final Plateau plateau;
-    private final Joueur joueurBlanc;
-    private final Joueur joueurNoir;
+    private final JoueurPartie joueurBlanc;
+    private final JoueurPartie joueurNoir;
 
     /** Joueur dont c'est le tour. */
-    private Joueur joueurCourant;
+    private JoueurPartie joueurCourant;
 
     /** État global de la partie. */
     private EtatPartie etat;
@@ -39,10 +48,16 @@ public class arbitre {
     // Construction / initialisation
     // -------------------------------------------------------------------------
 
-    public arbitre(String nomBlanc, String nomNoir) {
+    /**
+     * Construit un arbitre avec deux joueurs et un plateau vide.
+     *
+     * @param nomBlanc nom du joueur blanc
+     * @param nomNoir nom du joueur noir
+     */
+    public Arbitre(String nomBlanc, String nomNoir) {
         this.plateau = new Plateau();
-        this.joueurBlanc = new Joueur(1, nomBlanc, Couleur.BLANC);
-        this.joueurNoir = new Joueur(2, nomNoir, Couleur.NOIR);
+        this.joueurBlanc = new JoueurPartie(1, nomBlanc, Couleur.BLANC);
+        this.joueurNoir = new JoueurPartie(2, nomNoir, Couleur.NOIR);
         this.etat = EtatPartie.EN_ATTENTE;
         this.pieceEnChaine = null;
     }
@@ -66,6 +81,10 @@ public class arbitre {
      * Tente un déplacement simple (sans prise).
      * Interdit si le joueur courant a au moins une prise possible.
      * Interdit si on est en chaîne de prises.
+     *
+     * @param piece pièce à déplacer
+     * @param destination case cible
+     * @return true si le déplacement est validé et appliqué
      */
     public boolean jouerDeplacement(Piece piece, Case destination) {
         if (etat != EtatPartie.EN_COURS) return false;
@@ -86,6 +105,11 @@ public class arbitre {
     /**
      * Tente une prise : piece saute par-dessus piecePrise pour atterrir sur destination.
      * Après la prise, si la même pièce peut encore manger, le tour ne passe pas.
+     *
+     * @param piece pièce qui effectue la prise
+     * @param piecePrise pièce adverse capturée
+     * @param destination case d'arrivée
+     * @return true si la prise est validée et appliquée
      */
     public boolean jouerPrise(Piece piece, Piece piecePrise, Case destination) {
         if (etat != EtatPartie.EN_COURS) return false;
@@ -119,11 +143,22 @@ public class arbitre {
     // Prise obligatoire & chaîne de prises
     // -------------------------------------------------------------------------
 
+    /**
+     * Indique si le joueur courant dispose d'au moins une prise légale.
+     *
+     * @return true si une prise est possible pour le joueur courant
+     */
     public boolean joueurCourantAPrisePossible() {
         List<Piece> pieces = getPiecesJoueurCourant();
         return MoveCalculator.aUnePrisePossible(pieces, plateau);
     }
 
+    /**
+     * Liste les destinations de prise possibles pour une pièce donnée.
+     *
+     * @param piece pièce testée
+     * @return liste des cases de destination pour une prise
+     */
     public List<Case> getPrisesPossiblesPour(Piece piece) {
         if (piece == null) return new ArrayList<>();
         return MoveCalculator.getPrisesPossibles(piece, plateau);
@@ -176,6 +211,12 @@ public class arbitre {
     // Fin de partie
     // -------------------------------------------------------------------------
 
+    /**
+     * Vérifie et met à jour l'état final de la partie.
+     *
+     * L'état passe à BLANC_GAGNE ou NOIR_GAGNE si un joueur n'a plus de pièces
+     * ou ne peut plus jouer.
+     */
     public void verifierFinDePartie() {
         if (plateau.getNoires().isEmpty()) {
             etat = EtatPartie.BLANC_GAGNE;
@@ -192,7 +233,7 @@ public class arbitre {
         }
     }
 
-    public boolean aDesMovementsPossibles(Joueur joueur) {
+    public boolean aDesMovementsPossibles(JoueurPartie joueur) {
         List<Piece> pieces = (joueur.getCouleur() == Couleur.BLANC)
                 ? new ArrayList<>(plateau.getBlanches())
                 : new ArrayList<>(plateau.getNoires());
@@ -214,12 +255,12 @@ public class arbitre {
     // -------------------------------------------------------------------------
 
     public Plateau getPlateau()          { return plateau; }
-    public Joueur getJoueurBlanc()       { return joueurBlanc; }
-    public Joueur getJoueurNoir()        { return joueurNoir; }
-    public Joueur getJoueurCourant()     { return joueurCourant; }
+    public JoueurPartie getJoueurBlanc()       { return joueurBlanc; }
+    public JoueurPartie getJoueurNoir()        { return joueurNoir; }
+    public JoueurPartie getJoueurCourant()     { return joueurCourant; }
     public EtatPartie getEtat()          { return etat; }
 
-    public Joueur getGagnant() {
+    public JoueurPartie getGagnant() {
         if (etat == EtatPartie.BLANC_GAGNE) return joueurBlanc;
         if (etat == EtatPartie.NOIR_GAGNE) return joueurNoir;
         return null;

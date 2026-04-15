@@ -1,5 +1,8 @@
 package org.example.leprojet;
 
+import org.example.leprojet.core.Case;
+import org.example.leprojet.core.Piece;
+
 /**
  * Représente un coup joué sur le damier.
  * Peut être un déplacement simple ou une prise.

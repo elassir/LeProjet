@@ -7,8 +7,15 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import org.example.leprojet.*;
+import org.example.leprojet.Arbitre;
+import org.example.leprojet.CoupCallback;
+import org.example.leprojet.MoveCalculator;
 import org.example.leprojet.common.Message;
+import org.example.leprojet.core.Case;
+import org.example.leprojet.core.Couleur;
+import org.example.leprojet.core.Piece;
+import org.example.leprojet.ui.DamierView;
+import org.example.leprojet.ui.SoundManager;
 
 /**
  * Interface graphique d'un joueur connecté au serveur.
@@ -20,7 +27,7 @@ import org.example.leprojet.common.Message;
 public class InterfaceGraphique extends VBox {
 
     private Joueur joueur;
-    private arbitre arb;
+    private Arbitre arb;
     private DamierView damierView;
     private Couleur maCouleur;
 
@@ -81,7 +88,7 @@ public class InterfaceGraphique extends VBox {
     }
 
     private void onDebutPartie() {
-        arb = new arbitre("BLANC", "NOIR");
+        arb = new Arbitre("BLANC", "NOIR");
         arb.initialiserPartie();
 
         getChildren().remove(damierView);

@@ -1,13 +1,14 @@
 package org.example.leprojet.ui;
 
 import org.example.leprojet.Arbitre;
-import org.example.leprojet.Case;
-import org.example.leprojet.Couleur;
 import org.example.leprojet.CoupCallback;
-import org.example.leprojet.EtatPartie;
 import org.example.leprojet.MoveCalculator;
-import org.example.leprojet.Piece;
-import org.example.leprojet.Plateau;
+import org.example.leprojet.core.Case;
+import org.example.leprojet.core.Couleur;
+import org.example.leprojet.core.EtatPartie;
+import org.example.leprojet.core.Piece;
+import org.example.leprojet.core.Plateau;
+import org.example.leprojet.ui.SoundManager;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -284,4 +285,5 @@ public class DamierView extends BorderPane {
         if (onCoupJoue != null) onCoupJoue.run();
     }
 }
+
 

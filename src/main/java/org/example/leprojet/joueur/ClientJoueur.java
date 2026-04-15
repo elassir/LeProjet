@@ -3,7 +3,7 @@ package org.example.leprojet.joueur;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import org.example.leprojet.MenuView;
+import org.example.leprojet.ui.MenuView;
 
 import java.io.IOException;
 

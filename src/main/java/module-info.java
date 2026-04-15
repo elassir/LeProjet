@@ -16,6 +16,7 @@ module org.example.leprojet {
     opens org.example.leprojet.joueur to javafx.graphics, javafx.fxml;
 
     exports org.example.leprojet;
+    exports org.example.leprojet.core;
     exports org.example.leprojet.common;
     exports org.example.leprojet.server;
     exports org.example.leprojet.joueur;

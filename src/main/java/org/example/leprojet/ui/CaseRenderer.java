@@ -1,9 +1,9 @@
 package org.example.leprojet.ui;
 
-import org.example.leprojet.Case;
-import org.example.leprojet.Couleur;
-import org.example.leprojet.Dame;
-import org.example.leprojet.Piece;
+import org.example.leprojet.core.Case;
+import org.example.leprojet.core.Couleur;
+import org.example.leprojet.core.Dame;
+import org.example.leprojet.core.Piece;
 
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -82,15 +82,15 @@ public class CaseRenderer {
         // Indicateur de destination (point ou cercle)
         if (isDest) {
             if (cs.estVide()) {
-                // Point gris semi-transparent (style chess.com)
+                // Point de destination semi-transparent
                 Circle dot = new Circle(TAILLE_CASE * 0.14);
-                dot.setFill(Color.web("#000000", 0.2));
+                dot.setFill(DESTINATION_FILL);
                 cell.getChildren().add(dot);
             } else {
                 // Cercle autour de la pièce capturable
                 Circle ring = new Circle(TAILLE_CASE * 0.44);
                 ring.setFill(Color.TRANSPARENT);
-                ring.setStroke(Color.web("#000000", 0.2));
+                ring.setStroke(DESTINATION_FILL);
                 ring.setStrokeWidth(TAILLE_CASE * 0.08);
                 cell.getChildren().add(ring);
             }
