@@ -38,6 +38,7 @@ public class JoueurReceive implements Runnable {
             while (true) {
                 Message mess = (Message) in.readObject();
                 if (mess != null) {
+                    System.out.println("[CLIENT][SOCKET][IN][THREAD] " + mess.toDebugJson());
                     joueur.messageReceived(mess);
                 }
             }

@@ -64,11 +64,11 @@ public class Arbitre {
 
     /**
      * Initialise le plateau, place les pions et démarre la partie.
-     * Les noirs jouent toujours en premier (règle française).
+     * Les blancs jouent en premier.
      */
     public void initialiserPartie() {
         plateau.initPions();
-        joueurCourant = joueurNoir;
+        joueurCourant = joueurBlanc;
         etat = EtatPartie.EN_COURS;
         pieceEnChaine = null;
     }
@@ -95,7 +95,12 @@ public class Arbitre {
         if (joueurCourantAPrisePossible()) return false;
         if (!MoveCalculator.estDeplacementValide(piece, destination, plateau)) return false;
 
+        int lDep = piece.getPosition().getLigne();
+        int cDep = piece.getPosition().getColonne();
         plateau.deplacerPiece(piece, destination);
+        System.out.println("[MOUVEMENT][VALIDE] "
+                + "dep=(" + lDep + "," + cDep + ")"
+                + " arr=(" + destination.getLigne() + "," + destination.getColonne() + ")");
         verifierPromotion(piece);
         passerLeTour();
         verifierFinDePartie();
@@ -120,8 +125,12 @@ public class Arbitre {
         if (pieceEnChaine != null && piece != pieceEnChaine) return false;
         if (!MoveCalculator.estPriseValide(piece, piecePrise, destination, plateau)) return false;
 
+        int lDep = piece.getPosition().getLigne();
+        int cDep = piece.getPosition().getColonne();
         plateau.deplacerPiece(piece, destination);
         plateau.supprimerPiece(piecePrise);
+        System.out.println("[MOUVEMENT][VALIDE] dep=(" + lDep + "," + cDep + ") arr=("
+                + destination.getLigne() + "," + destination.getColonne() + ") [PRISE]");
         verifierPromotion(piece);
 
         Piece pieceSurCase = destination.getPiece();
@@ -238,6 +247,18 @@ public class Arbitre {
                 ? new ArrayList<>(plateau.getBlanches())
                 : new ArrayList<>(plateau.getNoires());
         return MoveCalculator.aUnMouvementPossible(pieces, plateau);
+    }
+
+    /**
+     * Termine immédiatement la partie suite à un abandon.
+     *
+     * @param couleurAbandonne couleur du joueur qui abandonne
+     */
+    public void abandonner(Couleur couleurAbandonne) {
+        if (etat != EtatPartie.EN_COURS) return;
+        etat = (couleurAbandonne == Couleur.BLANC) ? EtatPartie.NOIR_GAGNE : EtatPartie.BLANC_GAGNE;
+        pieceEnChaine = null;
+        System.out.println("[ARBITRE] Abandon reçu: " + couleurAbandonne + " -> " + getGagnant() + " gagne");
     }
 
     // -------------------------------------------------------------------------

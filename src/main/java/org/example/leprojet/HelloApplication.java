@@ -5,6 +5,8 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.example.leprojet.ui.MenuView;
 
+import java.net.URL;
+
 /**
  * Point d'entrée principal de l'application JavaFX.
  * Affiche un menu d'accueil puis lance le jeu en mode local.
@@ -21,6 +23,10 @@ public class HelloApplication extends Application {
         });
 
         Scene scene = new Scene(menu, 600, 450);
+        URL css = getClass().getResource("/org/example/leprojet/styles.css");
+        if (css != null) {
+            scene.getStylesheets().add(css.toExternalForm());
+        }
         stage.setTitle("♟ Jeu de Dames");
         stage.setScene(scene);
         stage.show();

@@ -5,8 +5,14 @@ package org.example.leprojet.common;
  */
 public enum MessageType {
 
+    /** Client → Serveur : pseudo choisi au moment de la connexion. */
+    HELLO_PSEUDO,
+
     /** Serveur → Client : couleur assignée au joueur. */
     ASSIGNATION_COULEUR,
+
+    /** Serveur → Clients : pseudos BLANC/NOIR synchronisés. */
+    INFOS_JOUEURS,
 
     /** Serveur → Clients : la partie commence. */
     DEBUT_PARTIE,
@@ -22,6 +28,9 @@ public enum MessageType {
 
     /** Serveur → Clients : la partie est terminée. */
     FIN_PARTIE,
+
+    /** Client → Serveur : le joueur abandonne la partie. */
+    ABANDON,
 
     /** Message texte classique (chat / info). */
     TEXTE

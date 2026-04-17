@@ -8,8 +8,6 @@ import org.example.leprojet.core.Couleur;
 import org.example.leprojet.core.EtatPartie;
 import org.example.leprojet.core.Piece;
 import org.example.leprojet.core.Plateau;
-import org.example.leprojet.ui.SoundManager;
-
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.layout.BorderPane;
@@ -26,6 +24,8 @@ import java.util.List;
  * Le coup est délégué à un {@link CoupCallback} (local ou réseau).
  */
 public class DamierView extends BorderPane {
+
+    public static final double TAILLE_DAMIER_PREF = Plateau.NB_COLONNES * CaseRenderer.TAILLE_CASE + 12;
 
     private Plateau plateau;
     private final GridPane grille;
@@ -63,6 +63,8 @@ public class DamierView extends BorderPane {
         grille.setHgap(0);
         grille.setVgap(0);
         grille.setStyle("-fx-background-color: #3f2a1d; -fx-padding: 4;");
+        setMinSize(TAILLE_DAMIER_PREF, TAILLE_DAMIER_PREF);
+        setPrefSize(TAILLE_DAMIER_PREF, TAILLE_DAMIER_PREF);
 
         dessinerGrille();
 
@@ -126,8 +128,9 @@ public class DamierView extends BorderPane {
                 Case cs = cases[l][c];
                 boolean selected = pieceSelectionnee != null && pieceSelectionnee.getPosition() == cs;
                 boolean isDest = destinationsPossibles.contains(cs);
+                boolean isCaptureDest = isDest && !cs.estVide();
 
-                StackPane cell = CaseRenderer.creerCaseNode(cs, selected, isDest);
+                StackPane cell = CaseRenderer.creerCaseNode(cs, selected, isDest, isCaptureDest);
                 cell.setOnMouseClicked(e -> onClic(cs));
                 grille.add(cell, c, l);
             }

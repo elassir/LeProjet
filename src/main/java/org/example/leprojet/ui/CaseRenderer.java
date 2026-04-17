@@ -55,7 +55,7 @@ public class CaseRenderer {
     /**
      * Crée le nœud graphique d'une case du damier.
      */
-    public static StackPane creerCaseNode(Case cs, boolean selected, boolean isDest) {
+    public static StackPane creerCaseNode(Case cs, boolean selected, boolean isDest, boolean isCaptureDest) {
         Rectangle fond = new Rectangle(TAILLE_CASE, TAILLE_CASE);
         fond.setArcWidth(0);
         fond.setArcHeight(0);
@@ -65,12 +65,14 @@ public class CaseRenderer {
         fond.setFill(baseCouleur);
 
         StackPane cell = new StackPane(fond);
+        cell.getStyleClass().add("board-cell");
 
         // Surbrillance sélection
         if (selected) {
             Rectangle highlight = new Rectangle(TAILLE_CASE, TAILLE_CASE);
             highlight.setFill(SELECTION_FILL);
             cell.getChildren().add(highlight);
+            cell.getStyleClass().add("cell-selected");
         }
 
         // Pièce sur la case
@@ -85,6 +87,11 @@ public class CaseRenderer {
                 // Point de destination semi-transparent
                 Circle dot = new Circle(TAILLE_CASE * 0.14);
                 dot.setFill(DESTINATION_FILL);
+                DropShadow glow = new DropShadow();
+                glow.setRadius(10);
+                glow.setColor(Color.web("#b4d88a", 0.70));
+                dot.setEffect(glow);
+                cell.getStyleClass().add("cell-destination");
                 cell.getChildren().add(dot);
             } else {
                 // Cercle autour de la pièce capturable
@@ -92,8 +99,17 @@ public class CaseRenderer {
                 ring.setFill(Color.TRANSPARENT);
                 ring.setStroke(DESTINATION_FILL);
                 ring.setStrokeWidth(TAILLE_CASE * 0.08);
+                DropShadow captureGlow = new DropShadow();
+                captureGlow.setRadius(12);
+                captureGlow.setColor(Color.web("#ff7043", 0.75));
+                ring.setEffect(captureGlow);
+                cell.getStyleClass().add("cell-capture-destination");
                 cell.getChildren().add(ring);
             }
+        }
+
+        if (isCaptureDest) {
+            cell.getStyleClass().add("cell-capture-destination");
         }
 
         return cell;

@@ -22,6 +22,9 @@ public class Message implements Serializable {
 
     // Couleur transmise (utilisée pour ASSIGNATION_COULEUR, FIN_PARTIE…)
     private String couleur;
+    private String pseudoBlanc;
+    private String pseudoNoir;
+    private long timestamp;
 
     // ── Constructeur texte (rétro-compatible) ──────────────────────────
 
@@ -29,6 +32,7 @@ public class Message implements Serializable {
         this.type = MessageType.TEXTE;
         this.sender = sender;
         this.content = content;
+        this.timestamp = System.currentTimeMillis();
     }
 
     // ── Constructeur typé sans données supplémentaires ─────────────────
@@ -37,6 +41,15 @@ public class Message implements Serializable {
         this.type = type;
         this.sender = sender;
         this.content = content;
+        this.timestamp = System.currentTimeMillis();
+    }
+
+    public static Message texte(String sender, String content) {
+        return new Message(MessageType.TEXTE, sender, content);
+    }
+
+    public static Message helloPseudo(String pseudo) {
+        return new Message(MessageType.HELLO_PSEUDO, pseudo, pseudo);
     }
 
     // ── Factory : coup ─────────────────────────────────────────────────
@@ -67,6 +80,13 @@ public class Message implements Serializable {
         return m;
     }
 
+    public static Message infosJoueurs(String pseudoBlanc, String pseudoNoir) {
+        Message m = new Message(MessageType.INFOS_JOUEURS, "Serveur", "");
+        m.pseudoBlanc = pseudoBlanc;
+        m.pseudoNoir = pseudoNoir;
+        return m;
+    }
+
     // ── Factory : début / fin ──────────────────────────────────────────
 
     public static Message debutPartie() {
@@ -76,6 +96,12 @@ public class Message implements Serializable {
     public static Message finPartie(String gagnant) {
         Message m = new Message(MessageType.FIN_PARTIE, "Serveur", gagnant);
         m.couleur = gagnant;
+        return m;
+    }
+
+    public static Message abandon(String couleurAbandonne) {
+        Message m = new Message(MessageType.ABANDON, "", "ABANDON");
+        m.couleur = couleurAbandonne;
         return m;
     }
 
@@ -89,10 +115,38 @@ public class Message implements Serializable {
     public int getLigneArrivee()     { return ligneArrivee; }
     public int getColonneArrivee()   { return colonneArrivee; }
     public String getCouleur()       { return couleur; }
+    public String getPseudoBlanc()   { return pseudoBlanc; }
+    public String getPseudoNoir()    { return pseudoNoir; }
+    public long getTimestamp()       { return timestamp; }
 
     // ── Setters ────────────────────────────────────────────────────────
 
     public void setSender(String sender) { this.sender = sender; }
+    public void setContent(String content) { this.content = content; }
+    public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
+    public void setPseudoBlanc(String pseudoBlanc) { this.pseudoBlanc = pseudoBlanc; }
+    public void setPseudoNoir(String pseudoNoir) { this.pseudoNoir = pseudoNoir; }
+
+    public String toDebugJson() {
+        return "{"
+                + "\"type\":\"" + type + "\","
+                + "\"sender\":\"" + safe(sender) + "\","
+                + "\"content\":\"" + safe(content) + "\","
+                + "\"ligneDepart\":" + ligneDepart + ","
+                + "\"colonneDepart\":" + colonneDepart + ","
+                + "\"ligneArrivee\":" + ligneArrivee + ","
+                + "\"colonneArrivee\":" + colonneArrivee + ","
+                + "\"couleur\":\"" + safe(couleur) + "\","
+                + "\"pseudoBlanc\":\"" + safe(pseudoBlanc) + "\","
+                + "\"pseudoNoir\":\"" + safe(pseudoNoir) + "\","
+                + "\"timestamp\":" + timestamp
+                + "}";
+    }
+
+    private String safe(String v) {
+        if (v == null) return "";
+        return v.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
+    }
 
     @Override
     public String toString() {
@@ -100,7 +154,9 @@ public class Message implements Serializable {
             case COUP, COUP_VALIDE -> type + " (" + ligneDepart + "," + colonneDepart
                     + ")→(" + ligneArrivee + "," + colonneArrivee + ")";
             case ASSIGNATION_COULEUR -> "COULEUR=" + couleur;
+            case INFOS_JOUEURS -> "JOUEURS BLANC=" + pseudoBlanc + " NOIR=" + pseudoNoir;
             case FIN_PARTIE -> "FIN gagnant=" + couleur;
+            case ABANDON -> "ABANDON couleur=" + couleur;
             default -> sender + " : " + content;
         };
     }

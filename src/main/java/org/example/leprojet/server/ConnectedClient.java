@@ -23,6 +23,8 @@ public class ConnectedClient implements Runnable {
 
     /** Couleur assignée : "BLANC" ou "NOIR" (null tant que pas assigné). */
     private String couleur;
+    private String pseudo;
+    private boolean helloPseudoRecu;
 
     public ConnectedClient(Server server, Socket socket) throws IOException {
         this.server = server;
@@ -37,11 +39,23 @@ public class ConnectedClient implements Runnable {
     public int getId()              { return id; }
     public String getCouleur()      { return couleur; }
     public void setCouleur(String c) { this.couleur = c; }
+    public String getPseudo()       { return pseudo; }
+    public boolean hasHelloPseudo() { return helloPseudoRecu; }
+    public void setPseudo(String pseudo) {
+        if (pseudo == null || pseudo.isBlank()) return;
+        this.pseudo = pseudo.trim();
+        this.helloPseudoRecu = true;
+    }
+
+    public String getPseudoAffiche() {
+        return (pseudo == null || pseudo.isBlank()) ? ("Joueur-" + id) : pseudo;
+    }
 
     // ── Envoi ──────────────────────────────────────────────────────────
 
     public void sendMessage(Message mess) {
         try {
+            System.out.println("[SERVEUR][SOCKET][OUT][client=" + id + "] " + mess.toDebugJson());
             out.writeObject(mess);
             out.flush();
         } catch (IOException e) {
@@ -58,6 +72,7 @@ public class ConnectedClient implements Runnable {
             while (true) {
                 Message mess = (Message) in.readObject();
                 if (mess != null) {
+                    System.out.println("[SERVEUR][SOCKET][IN][client=" + id + "] " + mess.toDebugJson());
                     server.onMessageRecu(this, mess);
                 }
             }

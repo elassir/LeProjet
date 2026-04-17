@@ -1,11 +1,13 @@
 package org.example.leprojet.ui;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.LineEvent;
-import java.io.ByteArrayInputStream;
+import javafx.scene.media.AudioClip;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -21,9 +23,19 @@ import java.util.Random;
  */
 public class SoundManager {
 
+    private enum SoundId {
+        MOVE,
+        CAPTURE,
+        ENDGAME
+    }
+
     private static boolean enabled = true;
     private static final float SAMPLE_RATE = 44100f;
+    private static final double MASTER_GAIN = 0.72;
     private static final Random RNG = new Random();
+    private static final Map<SoundId, AudioClip> CLIPS = new EnumMap<>(SoundId.class);
+    private static final Map<SoundId, Path> TEMP_FILES = new EnumMap<>(SoundId.class);
+    private static volatile boolean initialized;
 
     private SoundManager() {
     }
@@ -42,28 +54,33 @@ public class SoundManager {
      * "Toc" court et sec — pièce posée sur le damier (style chess.com move).
      */
     public static void playMove() {
-        playAsync(() -> jouerSon(genererSonMove()));
+        play(SoundId.MOVE);
     }
 
     /**
      * Impact sourd + crack — pièce capturée (style chess.com capture).
      */
     public static void playCapture() {
-        playAsync(() -> jouerSon(genererSonCapture()));
+        play(SoundId.CAPTURE);
     }
 
     /**
      * Son ascendant brillant — promotion en dame.
      */
     public static void playPromotion() {
-        playAsync(() -> jouerSon(genererSonPromotion()));
+        play(SoundId.MOVE);
     }
 
     /**
      * Fanfare courte — victoire.
      */
     public static void playVictory() {
-        playAsync(() -> jouerSon(genererSonVictory()));
+        play(SoundId.ENDGAME);
+    }
+
+    /** Son de fin de partie, appelé à l'arrêt d'une session réseau/local. */
+    public static void playEndgame() {
+        play(SoundId.ENDGAME);
     }
 
     // ── Génération : Move ("toc" bois) ─────────────────────────────────
@@ -75,12 +92,12 @@ public class SoundManager {
         for (int i = 0; i < durée; i++) {
             double t = i / SAMPLE_RATE;
             // "Toc" : bruit filtré + tonale basse, decay exponentiel rapide
-            double decay = Math.exp(-t * 80);
-            double tonale = Math.sin(2 * Math.PI * 1200 * t) * 0.4;
-            double bruit = (RNG.nextDouble() * 2 - 1) * 0.6;
+            double decay = Math.exp(-t * 78);
+            double tonale = Math.sin(2 * Math.PI * 980 * t) * 0.34;
+            double bruit = (RNG.nextDouble() * 2 - 1) * 0.48;
             // Filtre passe-bas simplifié sur le bruit
             double signal = (tonale + bruit * decay * 0.5) * decay;
-            buf[i] = clamp(signal * 110);
+            buf[i] = clamp(signal * 88);
         }
         return buf;
     }
@@ -95,103 +112,141 @@ public class SoundManager {
             double t = i / SAMPLE_RATE;
 
             // Phase 1 : impact grave "THUD" (0-40ms)
-            double decayImpact = Math.exp(-t * 50);
-            double thud = Math.sin(2 * Math.PI * 200 * t) * decayImpact * 0.6;
+            double decayImpact = Math.exp(-t * 45);
+            double thud = Math.sin(2 * Math.PI * 190 * t) * decayImpact * 0.55;
 
             // Phase 2 : crack bois aigü (0-20ms)
-            double decayCrack = Math.exp(-t * 150);
-            double crack = (RNG.nextDouble() * 2 - 1) * decayCrack * 0.5;
+            double decayCrack = Math.exp(-t * 140);
+            double crack = (RNG.nextDouble() * 2 - 1) * decayCrack * 0.35;
 
             // Phase 3 : tonale médium
-            double decayTone = Math.exp(-t * 60);
-            double tone = Math.sin(2 * Math.PI * 800 * t) * decayTone * 0.3;
+            double decayTone = Math.exp(-t * 58);
+            double tone = Math.sin(2 * Math.PI * 740 * t) * decayTone * 0.24;
 
             double signal = thud + crack + tone;
-            buf[i] = clamp(signal * 120);
+            buf[i] = clamp(signal * 92);
         }
         return buf;
     }
 
     // ── Génération : Promotion (arpège ascendant) ──────────────────────
 
-    private static byte[] genererSonPromotion() {
-        int durée = ms(280);
-        byte[] buf = new byte[durée];
-
-        double[] notes = {523.25, 659.25, 783.99, 1046.50}; // C5, E5, G5, C6
-        int noteDurée = durée / notes.length;
-
-        for (int i = 0; i < durée; i++) {
-            int noteIdx = Math.min(i / noteDurée, notes.length - 1);
-            double freq = notes[noteIdx];
-            double t = i / SAMPLE_RATE;
-            double localT = (i - noteIdx * noteDurée) / SAMPLE_RATE;
-            double envelope = Math.exp(-localT * 12) * Math.min(localT * 500, 1.0);
-
-            double signal = Math.sin(2 * Math.PI * freq * t) * envelope;
-            // Ajouter harmonique douce
-            signal += Math.sin(2 * Math.PI * freq * 2 * t) * envelope * 0.2;
-            buf[i] = clamp(signal * 80);
-        }
-        return buf;
-    }
-
-    // ── Génération : Victory (fanfare) ─────────────────────────────────
-
     private static byte[] genererSonVictory() {
-        int durée = ms(500);
+        int durée = ms(420);
         byte[] buf = new byte[durée];
 
-        // Trois accords joyeux successifs
-        double[][] accords = {
-                {523.25, 659.25, 783.99},  // C maj
-                {587.33, 739.99, 880.00},  // D maj
-                {659.25, 830.61, 987.77},  // E maj
-        };
-        int accordDurée = durée / accords.length;
+        // Son sec de "fin" : attaque courte + résonance discrète.
+        double hitFreq = 640;
+        double bodyFreq = 280;
 
         for (int i = 0; i < durée; i++) {
-            int accIdx = Math.min(i / accordDurée, accords.length - 1);
-            double localT = (i - accIdx * accordDurée) / SAMPLE_RATE;
-            double envelope = Math.exp(-localT * 5) * Math.min(localT * 300, 1.0);
-
-            double signal = 0;
-            for (double freq : accords[accIdx]) {
-                double t = i / SAMPLE_RATE;
-                signal += Math.sin(2 * Math.PI * freq * t) * envelope;
-            }
-            signal /= accords[accIdx].length;
-            buf[i] = clamp(signal * 80);
+            double t = i / SAMPLE_RATE;
+            double hitEnv = Math.exp(-t * 42);
+            double bodyEnv = Math.exp(-t * 9);
+            double hit = Math.sin(2 * Math.PI * hitFreq * t) * hitEnv * 0.65;
+            double body = Math.sin(2 * Math.PI * bodyFreq * t) * bodyEnv * 0.35;
+            double noise = (RNG.nextDouble() * 2 - 1) * Math.exp(-t * 80) * 0.18;
+            buf[i] = clamp((hit + body + noise) * 86);
         }
         return buf;
     }
 
-    // ── Lecture audio ──────────────────────────────────────────────────
+    private static void play(SoundId soundId) {
+        if (!enabled) return;
+        ensureInitialized();
+        AudioClip clip = CLIPS.get(soundId);
+        if (clip == null) return;
+        clip.stop();
+        clip.play(MASTER_GAIN);
+    }
 
-    private static void jouerSon(byte[] samples) {
+    private static synchronized void ensureInitialized() {
+        if (initialized) return;
         try {
-            AudioFormat format = new AudioFormat(SAMPLE_RATE, 8, 1, true, false);
-            AudioInputStream ais = new AudioInputStream(
-                    new ByteArrayInputStream(samples), format, samples.length);
-
-            Clip clip = AudioSystem.getClip();
-            clip.open(ais);
-            clip.start();
-            clip.addLineListener(event -> {
-                if (event.getType() == LineEvent.Type.STOP) {
-                    clip.close();
-                }
-            });
+            chargerClip(SoundId.MOVE, genererSonMove());
+            chargerClip(SoundId.CAPTURE, genererSonCapture());
+            chargerClip(SoundId.ENDGAME, genererSonVictory());
+            initialized = true;
         } catch (Exception e) {
             // Son non critique
         }
     }
 
-    private static void playAsync(Runnable task) {
-        if (!enabled) return;
-        Thread t = new Thread(task, "sound");
-        t.setDaemon(true);
-        t.start();
+    private static void chargerClip(SoundId id, byte[] samples) throws IOException {
+        byte[] wav = buildWav(samples, (int) SAMPLE_RATE);
+        Path tempWav = Files.createTempFile("leprojet-sound-" + id.name().toLowerCase() + "-", ".wav");
+        Files.write(tempWav, wav, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+        tempWav.toFile().deleteOnExit();
+
+        AudioClip clip = new AudioClip(tempWav.toUri().toString());
+        clip.setCycleCount(1);
+        CLIPS.put(id, clip);
+        TEMP_FILES.put(id, tempWav);
+    }
+
+    public static synchronized void shutdown() {
+        for (AudioClip clip : CLIPS.values()) {
+            clip.stop();
+        }
+        CLIPS.clear();
+
+        for (Path p : TEMP_FILES.values()) {
+            try {
+                Files.deleteIfExists(p);
+            } catch (IOException ignored) {
+            }
+        }
+        TEMP_FILES.clear();
+        initialized = false;
+    }
+
+    private static byte[] buildWav(byte[] pcm8bit, int sampleRate) {
+        int dataSize = pcm8bit.length;
+        int fileSizeMinus8 = 36 + dataSize;
+
+        byte[] wav = new byte[44 + dataSize];
+        int idx = 0;
+        idx = putAscii(wav, idx, "RIFF");
+        idx = putLeInt(wav, idx, fileSizeMinus8);
+        idx = putAscii(wav, idx, "WAVE");
+        idx = putAscii(wav, idx, "fmt ");
+        idx = putLeInt(wav, idx, 16);
+        idx = putLeShort(wav, idx, 1);
+        idx = putLeShort(wav, idx, 1);
+        idx = putLeInt(wav, idx, sampleRate);
+        idx = putLeInt(wav, idx, sampleRate);
+        idx = putLeShort(wav, idx, 1);
+        idx = putLeShort(wav, idx, 8);
+        idx = putAscii(wav, idx, "data");
+        idx = putLeInt(wav, idx, dataSize);
+
+        // WAV PCM 8-bit doit être non signé : conversion [-128..127] -> [0..255].
+        for (int i = 0; i < dataSize; i++) {
+            int signed = pcm8bit[i];
+            wav[idx + i] = (byte) (signed + 128);
+        }
+        return wav;
+    }
+
+    private static int putAscii(byte[] out, int offset, String s) {
+        for (int i = 0; i < s.length(); i++) {
+            out[offset + i] = (byte) s.charAt(i);
+        }
+        return offset + s.length();
+    }
+
+    private static int putLeInt(byte[] out, int offset, int value) {
+        out[offset] = (byte) (value & 0xff);
+        out[offset + 1] = (byte) ((value >>> 8) & 0xff);
+        out[offset + 2] = (byte) ((value >>> 16) & 0xff);
+        out[offset + 3] = (byte) ((value >>> 24) & 0xff);
+        return offset + 4;
+    }
+
+    private static int putLeShort(byte[] out, int offset, int value) {
+        out[offset] = (byte) (value & 0xff);
+        out[offset + 1] = (byte) ((value >>> 8) & 0xff);
+        return offset + 2;
     }
 
     // ── Utilitaires ────────────────────────────────────────────────────

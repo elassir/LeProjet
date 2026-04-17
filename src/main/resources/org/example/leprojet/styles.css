@@ -1,0 +1,69 @@
+.menu-root {
+    -fx-font-family: "System";
+}
+
+.menu-card {
+    -fx-border-color: rgba(63,42,29,0.12);
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.10), 10, 0.2, 0, 2);
+}
+
+.text-field {
+    -fx-background-radius: 8;
+}
+
+.button {
+    -fx-font-weight: 600;
+}
+
+.game-info-box {
+    -fx-background-color: rgba(0, 0, 0, 0.06);
+    -fx-background-radius: 8;
+}
+
+.danger-btn {
+    -fx-background-color: #c62828;
+    -fx-text-fill: white;
+    -fx-background-radius: 8;
+}
+
+.board-container {
+    -fx-background-color: rgba(255, 255, 255, 0.20);
+    -fx-background-radius: 10;
+    -fx-padding: 6;
+}
+
+.chat-panel {
+    -fx-background-color: rgba(255, 255, 255, 0.52);
+    -fx-background-radius: 10;
+    -fx-border-color: rgba(63, 42, 29, 0.18);
+    -fx-border-radius: 10;
+}
+
+.chat-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+}
+
+.chat-messages-box {
+    -fx-background-color: rgba(255, 255, 255, 0.74);
+    -fx-background-radius: 8;
+}
+
+.chat-line {
+    -fx-text-fill: #3f2a1d;
+}
+
+.board-cell.cell-selected {
+    -fx-effect: dropshadow(gaussian, rgba(246, 246, 105, 0.70), 12, 0.45, 0, 0);
+}
+
+.board-cell.cell-destination {
+    -fx-effect: dropshadow(gaussian, rgba(130, 151, 105, 0.62), 10, 0.35, 0, 0);
+}
+
+.board-cell.cell-capture-destination {
+    -fx-effect: dropshadow(gaussian, rgba(255, 112, 67, 0.78), 14, 0.55, 0, 0);
+}
+

@@ -5,6 +5,8 @@ import org.example.leprojet.Arbitre;
 import org.example.leprojet.core.Case;
 import org.example.leprojet.core.Piece;
 import org.example.leprojet.core.Plateau;
+import org.example.leprojet.core.Couleur;
+import org.example.leprojet.core.EtatPartie;
 import org.example.leprojet.common.Message;
 import org.example.leprojet.common.MessageType;
 
@@ -25,6 +27,7 @@ public class Server {
     private final int port;
     private final List<ConnectedClient> clients;
     private Arbitre arb;
+    private boolean partieDemarree;
 
     /**
      * Cree un serveur de jeu et demarre le thread d'ecoute des connexions.
@@ -35,6 +38,7 @@ public class Server {
     public Server(int port) throws IOException {
         this.port = port;
         this.clients = new ArrayList<>();
+        this.partieDemarree = false;
         new Thread(new Connection(this)).start();
         System.out.println("[SERVEUR] Démarré sur le port " + port);
     }
@@ -66,20 +70,57 @@ public class Server {
         newClient.sendMessage(Message.assignationCouleur(couleur));
         System.out.println("[SERVEUR] Client " + newClient.getId() + " → " + couleur);
 
-        // Quand 2 joueurs sont connectés → démarrer la partie
-        if (clients.size() == 2) {
-            demarrerPartie();
-        }
+        essayerDemarrerPartie();
     }
 
     // ── Démarrage de la partie ─────────────────────────────────────────
 
     private void demarrerPartie() {
-        arb = new Arbitre("BLANC", "NOIR");
-        arb.initialiserPartie();
+        ConnectedClient blanc = trouverParCouleur("BLANC");
+        ConnectedClient noir = trouverParCouleur("NOIR");
+        String nomBlanc = (blanc == null) ? "BLANC" : blanc.getPseudoAffiche();
+        String nomNoir = (noir == null) ? "NOIR" : noir.getPseudoAffiche();
 
+        arb = new Arbitre(nomBlanc, nomNoir);
+        arb.initialiserPartie();
+        partieDemarree = true;
+
+        diffuserInfosJoueurs();
         broadcastToAll(Message.debutPartie());
         System.out.println("[SERVEUR] Partie démarrée ! " + arb);
+    }
+
+    private void essayerDemarrerPartie() {
+        if (partieDemarree || clients.size() != 2) return;
+        if (!clientsPrets()) return;
+        demarrerPartie();
+    }
+
+    private boolean clientsPrets() {
+        for (ConnectedClient c : clients) {
+            if (!c.hasHelloPseudo()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void diffuserInfosJoueurs() {
+        ConnectedClient blanc = trouverParCouleur("BLANC");
+        ConnectedClient noir = trouverParCouleur("NOIR");
+        if (blanc == null || noir == null) return;
+
+        Message infos = Message.infosJoueurs(blanc.getPseudoAffiche(), noir.getPseudoAffiche());
+        broadcastToAll(infos);
+    }
+
+    private ConnectedClient trouverParCouleur(String couleur) {
+        for (ConnectedClient client : clients) {
+            if (couleur.equals(client.getCouleur())) {
+                return client;
+            }
+        }
+        return null;
     }
 
     // ── Réception d'un message d'un client ─────────────────────────────
@@ -91,13 +132,58 @@ public class Server {
      * @param mess message recu
      */
     public synchronized void onMessageRecu(ConnectedClient sender, Message mess) {
-        if (mess.getType() == MessageType.COUP) {
-            traiterCoup(sender, mess);
-        } else {
-            // Texte classique → broadcast
-            mess.setSender(String.valueOf(sender.getId()));
-            broadcastToAll(mess);
+        System.out.println("[SERVEUR][DISPATCH] client=" + sender.getId() + " type=" + mess.getType());
+        switch (mess.getType()) {
+            case HELLO_PSEUDO -> traiterHelloPseudo(sender, mess);
+            case COUP -> traiterCoup(sender, mess);
+            case ABANDON -> traiterAbandon(sender, mess);
+            case TEXTE -> traiterTexte(sender, mess);
+            default -> {
+                mess.setSender(sender.getPseudoAffiche());
+                broadcastToAll(mess);
+            }
         }
+    }
+
+    private void traiterHelloPseudo(ConnectedClient sender, Message mess) {
+        String brut = mess.getContent() == null ? "" : mess.getContent();
+        String pseudo = brut.replaceAll("[\\p{Cntrl}&&[^\\r\\n\\t]]", "").trim();
+        if (pseudo.isBlank()) {
+            sender.sendMessage(new Message("Serveur", "Pseudo invalide."));
+            return;
+        }
+        if (pseudo.length() > 24) {
+            pseudo = pseudo.substring(0, 24);
+        }
+
+        sender.setPseudo(pseudo);
+        diffuserInfosJoueurs();
+        essayerDemarrerPartie();
+    }
+
+    private void traiterTexte(ConnectedClient sender, Message mess) {
+        String brut = mess.getContent() == null ? "" : mess.getContent();
+        String nettoye = brut.replaceAll("[\\p{Cntrl}&&[^\\r\\n\\t]]", "").trim();
+        if (nettoye.isBlank() || nettoye.length() > 300) {
+            sender.sendMessage(new Message("Serveur", "Message chat invalide (1..300 caractères requis)."));
+            return;
+        }
+
+        String horodatage = java.time.LocalTime.now().withNano(0).toString();
+        Message diffusion = Message.texte(sender.getPseudoAffiche(), "[" + horodatage + "] " + nettoye);
+        diffusion.setTimestamp(System.currentTimeMillis());
+        broadcastToAll(diffusion);
+    }
+
+    private void traiterAbandon(ConnectedClient sender, Message mess) {
+        if (arb != null && arb.getEtat() == EtatPartie.EN_COURS) {
+            Couleur couleurAbandonne = "BLANC".equals(sender.getCouleur()) ? Couleur.BLANC : Couleur.NOIR;
+            arb.abandonner(couleurAbandonne);
+        }
+        String gagnant = "BLANC".equals(sender.getCouleur()) ? "NOIR" : "BLANC";
+        System.out.println("[SERVEUR] Abandon reçu du client " + sender.getPseudoAffiche() + " -> gagnant=" + gagnant);
+        broadcastToAll(Message.finPartie(gagnant));
+        broadcastToAll(new Message("Serveur", "Le joueur " + sender.getPseudoAffiche() + " a abandonné."));
     }
 
     // ── Traitement d'un coup ───────────────────────────────────────────
@@ -148,6 +234,7 @@ public class Server {
         if (ok) {
             Message coupOk = Message.coupValide(lDep, cDep, lArr, cArr);
             broadcastToAll(coupOk);
+            System.out.println("[SERVEUR][MOUVEMENT] dep=(" + lDep + "," + cDep + ") arr=(" + lArr + "," + cArr + ")");
             System.out.println("[SERVEUR] Coup validé : " + coupOk + " | " + arb);
 
             // Vérifier fin de partie
@@ -183,7 +270,8 @@ public class Server {
     public synchronized void disconnectedClient(ConnectedClient discClient) {
         discClient.closeClient();
         clients.remove(discClient);
-        broadcastToAll(new Message("Serveur", "Le client " + discClient.getId() + " s'est déconnecté."));
-        System.out.println("[SERVEUR] Client " + discClient.getId() + " déconnecté.");
+        partieDemarree = false;
+        broadcastToAll(new Message("Serveur", "Le joueur " + discClient.getPseudoAffiche() + " s'est déconnecté."));
+        System.out.println("[SERVEUR] Client " + discClient.getPseudoAffiche() + " déconnecté.");
     }
 }

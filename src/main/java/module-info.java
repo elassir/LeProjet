@@ -2,6 +2,7 @@ module org.example.leprojet {
     requires javafx.controls;
     requires javafx.fxml;
     requires javafx.web;
+    requires javafx.media;
     requires java.desktop;
 
     requires org.controlsfx.controls;

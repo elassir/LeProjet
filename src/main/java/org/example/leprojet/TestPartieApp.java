@@ -22,6 +22,8 @@ import org.example.leprojet.ui.DamierView;
 import org.example.leprojet.ui.MenuView;
 import org.example.leprojet.ui.SoundManager;
 
+import java.net.URL;
+
 /**
  * Application de test locale (sans serveur).
  * <p>
@@ -61,6 +63,10 @@ public class TestPartieApp extends Application {
         });
 
         Scene menuScene = new Scene(menu, 600, 450);
+        URL css = getClass().getResource("/org/example/leprojet/styles.css");
+        if (css != null) {
+            menuScene.getStylesheets().add(css.toExternalForm());
+        }
         primaryStage.setTitle("♟ Jeu de Dames — Menu");
         primaryStage.setScene(menuScene);
         primaryStage.show();
