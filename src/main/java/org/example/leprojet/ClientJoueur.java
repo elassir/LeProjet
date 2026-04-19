@@ -1,18 +1,18 @@
-package org.example.leprojet.joueur;
+package org.example.leprojet;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import org.example.leprojet.joueur.InterfaceGraphique;
+import org.example.leprojet.joueur.Joueur;
 import org.example.leprojet.ui.MenuView;
 
 import java.io.IOException;
 import java.net.URL;
 
 /**
- * Point d'entrée JavaFX d'un joueur de dames.
- * <p>
- * Affiche un menu d'accueil pour saisir le pseudo et les paramètres de connexion,
- * puis se connecte au serveur et affiche le damier.
+ * Point d'entrée principal de l'application JavaFX.
+ * Affiche le menu de connexion réseau et lance la partie en ligne.
  */
 public class ClientJoueur extends Application {
 
@@ -28,10 +28,10 @@ public class ClientJoueur extends Application {
             }
         });
 
-        Scene menuScene = new Scene(menu, 600, 450);
-        applyStylesheet(menuScene);
+        Scene scene = new Scene(menu, 600, 450);
+        applyStylesheet(scene);
         stage.setTitle("♟ Jeu de Dames — Connexion");
-        stage.setScene(menuScene);
+        stage.setScene(scene);
         stage.show();
     }
 
@@ -59,3 +59,4 @@ public class ClientJoueur extends Application {
         launch(args);
     }
 }
+

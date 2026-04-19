@@ -13,7 +13,7 @@ Public cible:
 Lecture recommandee pour une prise en main rapide:
 1. `docs/technique/architecture.md`
 2. `docs/technique/flux-donnees.md`
-3. code des points d'entree (`HelloApplication`, `ClientJoueur`, `MainServer`)
+3. code des points d'entree (`ClientJoueur`, `MainServer`)
 
 ## Principes de code retenus
 

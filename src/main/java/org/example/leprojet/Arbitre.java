@@ -2,7 +2,6 @@ package org.example.leprojet;
 
 import org.example.leprojet.core.Case;
 import org.example.leprojet.core.Couleur;
-import org.example.leprojet.core.Dame;
 import org.example.leprojet.core.EtatPartie;
 import org.example.leprojet.core.JoueurPartie;
 import org.example.leprojet.core.Piece;
@@ -171,6 +170,41 @@ public class Arbitre {
     public List<Case> getPrisesPossiblesPour(Piece piece) {
         if (piece == null) return new ArrayList<>();
         return MoveCalculator.getPrisesPossibles(piece, plateau);
+    }
+
+    /**
+     * Retourne les pièces du joueur courant qui sont autorisées à jouer
+     * lorsqu'une prise obligatoire existe.
+     *
+     * @return liste des pièces devant être mises en évidence
+     */
+    public List<Piece> getPiecesAvecPriseObligatoire() {
+        if (joueurCourant == null) return new ArrayList<>();
+        return getPiecesAvecPriseObligatoire(joueurCourant.getCouleur());
+    }
+
+    /**
+     * Retourne les pièces de la couleur donnée disposant d'au moins une prise.
+     * En chaîne de prises, seule la pièce imposée est retournée.
+     *
+     * @param couleur couleur à analyser
+     * @return pièces ayant une prise obligatoire
+     */
+    public List<Piece> getPiecesAvecPriseObligatoire(Couleur couleur) {
+        List<Piece> resultat = new ArrayList<>();
+        if (etat != EtatPartie.EN_COURS || couleur == null) return resultat;
+
+        if (pieceEnChaine != null) {
+            if (pieceEnChaine.getCouleur() == couleur) {
+                resultat.add(pieceEnChaine);
+            }
+            return resultat;
+        }
+
+        List<Piece> pieces = (couleur == Couleur.BLANC)
+                ? new ArrayList<>(plateau.getBlanches())
+                : new ArrayList<>(plateau.getNoires());
+        return MoveCalculator.getPiecesAvecPrisePossible(pieces, plateau);
     }
 
     public boolean isEnChaineDePrise() {

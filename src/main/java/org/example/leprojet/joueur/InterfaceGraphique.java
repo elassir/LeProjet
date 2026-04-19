@@ -4,7 +4,9 @@ import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
@@ -15,6 +17,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Stage;
 import org.example.leprojet.Arbitre;
 import org.example.leprojet.MoveCalculator;
 import org.example.leprojet.common.Message;
@@ -28,7 +31,7 @@ import org.example.leprojet.ui.SoundManager;
  * Interface graphique d'un joueur connecté au serveur.
  * <p>
  * Contient un {@link DamierView} interactif et des labels d'information.
- * Chaque coup local est envoyé au serveur via {@link CoupCallback}.
+ * Chaque coup local est envoyé au serveur via un callback de coup.
  * Les coups de l'adversaire arrivent via {@code onMessageRecu(COUP_VALIDE)}.
  */
 public class InterfaceGraphique extends VBox {
@@ -48,6 +51,13 @@ public class InterfaceGraphique extends VBox {
     private final Button btnAbandon;
     private final VBox chatPanel;
     private final StackPane damierContainer;
+    private StackPane rootStack;
+    private StackPane overlayFinPartie;
+    private Label lblFinTitre;
+    private Label lblFinDetail;
+    private Button btnRevanche;
+    private Button btnDeconnecter;
+    private boolean revancheDemandee;
 
     private final String pseudoLocal;
     private String pseudoBlanc = "Joueur BLANC";
@@ -129,9 +139,12 @@ public class InterfaceGraphique extends VBox {
         gameLayout.setTop(topBar);
         gameLayout.setCenter(centerRow);
         BorderPane.setMargin(topBar, new Insets(0, 0, 6, 0));
-        VBox.setVgrow(gameLayout, Priority.ALWAYS);
+        rootStack = new StackPane(gameLayout);
+        overlayFinPartie = creerOverlayFinPartie();
+        rootStack.getChildren().add(overlayFinPartie);
+        VBox.setVgrow(rootStack, Priority.ALWAYS);
 
-        getChildren().add(gameLayout);
+        getChildren().add(rootStack);
     }
 
     public void setClient(Joueur joueur) {
@@ -149,6 +162,8 @@ public class InterfaceGraphique extends VBox {
                 case COUP_VALIDE         -> onCoupValide(mess);
                 case COUP_INVALIDE       -> lblInfo.setText("⚠ " + mess.getContent());
                 case FIN_PARTIE          -> onFinPartie(mess);
+                case REVANCHE_DEMANDE    -> onDemandeRevanche(mess);
+                case REVANCHE_REPONSE    -> onReponseRevanche(mess);
                 case TEXTE               -> ajouterMessageChat(mess.getSender(), mess.getContent());
                 default                  -> lblInfo.setText(mess.toString());
             }
@@ -183,6 +198,7 @@ public class InterfaceGraphique extends VBox {
     private void onDebutPartie() {
         arb = new Arbitre(pseudoBlanc, pseudoNoir);
         arb.initialiserPartie();
+        revancheDemandee = false;
 
         damierContainer.getChildren().clear();
         damierView = new DamierView(arb.getPlateau(), arb, maCouleur);
@@ -196,6 +212,7 @@ public class InterfaceGraphique extends VBox {
         damierContainer.getChildren().add(damierView);
         damierView.setDisable(false);
         btnAbandon.setDisable(false);
+        masquerOverlayFinPartie();
 
         mettreAJourLabels();
         ajouterMessageChat("Systeme", "La partie commence. Les blancs jouent en premier.");
@@ -244,16 +261,64 @@ public class InterfaceGraphique extends VBox {
         if (damierView != null) damierView.setDisable(true);
         btnAbandon.setDisable(true);
         String gagnant = mess.getCouleur();
+        String titreOverlay;
+        String detailOverlay;
         if (gagnant != null && gagnant.equals(joueur.getCouleurAssignee())) {
             lblTour.setText("🏆 Vous avez gagné !");
             lblTour.setStyle("-fx-text-fill: #4caf50; -fx-font-size: 16;");
+            titreOverlay = "Victoire !";
+            detailOverlay = "Vous pouvez proposer une revanche à votre adversaire.";
+        } else if (gagnant == null || gagnant.isBlank()) {
+            lblTour.setText("Match nul.");
+            lblTour.setStyle("-fx-text-fill: #6d4c41; -fx-font-size: 16;");
+            titreOverlay = "Match nul";
+            detailOverlay = "Choisissez la suite de la partie.";
         } else {
             lblTour.setText("Vous avez perdu.");
             lblTour.setStyle("-fx-text-fill: #f44336; -fx-font-size: 16;");
+            titreOverlay = "Défaite";
+            detailOverlay = "Vous pouvez demander une revanche à votre adversaire.";
         }
         lblInfo.setText("");
         ajouterMessageChat("Systeme", "Partie terminee.");
+        afficherOverlayFinPartie(titreOverlay, detailOverlay);
         SoundManager.playEndgame();
+    }
+
+    private void onDemandeRevanche(Message mess) {
+        if (joueur == null) return;
+
+        String demandeur = (mess.getSender() == null || mess.getSender().isBlank()) ? "Votre adversaire" : mess.getSender();
+        ButtonType accepter = new ButtonType("Accepter");
+        ButtonType refuser = new ButtonType("Refuser");
+
+        Alert prompt = new Alert(Alert.AlertType.CONFIRMATION);
+        prompt.setTitle("Revanche");
+        prompt.setHeaderText(demandeur + " propose une revanche");
+        prompt.setContentText("Voulez-vous relancer automatiquement une nouvelle partie ?");
+        prompt.getButtonTypes().setAll(accepter, refuser);
+
+        boolean acceptee = prompt.showAndWait().orElse(refuser) == accepter;
+        joueur.repondreRevanche(acceptee);
+        lblInfo.setText(acceptee ? "Revanche acceptée. Relance en cours..." : "Revanche refusée.");
+        ajouterMessageChat("Systeme", demandeur + (acceptee ? " : revanche acceptée." : " : revanche refusée."));
+    }
+
+    private void onReponseRevanche(Message mess) {
+        boolean acceptee = Boolean.TRUE.equals(mess.getRevancheAcceptee());
+        String repondeur = (mess.getSender() == null || mess.getSender().isBlank()) ? "Votre adversaire" : mess.getSender();
+
+        if (acceptee) {
+            lblInfo.setText(repondeur + " a accepté la revanche. Nouvelle partie en cours...");
+            ajouterMessageChat("Systeme", repondeur + " a accepté la revanche.");
+            if (btnRevanche != null) btnRevanche.setDisable(true);
+            return;
+        }
+
+        revancheDemandee = false;
+        lblInfo.setText(repondeur + " a refusé la revanche.");
+        ajouterMessageChat("Systeme", repondeur + " a refusé la revanche.");
+        if (btnRevanche != null) btnRevanche.setDisable(false);
     }
 
     private void onAbandon() {
@@ -321,6 +386,78 @@ public class InterfaceGraphique extends VBox {
             adv = pseudoBlanc;
         }
         lblJoueurs.setText("Moi: " + moi + "  |  Adversaire: " + adv);
+    }
+
+    private StackPane creerOverlayFinPartie() {
+        lblFinTitre = new Label();
+        lblFinTitre.setFont(Font.font("System", FontWeight.BOLD, 22));
+        lblFinTitre.setStyle("-fx-text-fill: #3f2a1d;");
+
+        lblFinDetail = new Label();
+        lblFinDetail.setWrapText(true);
+        lblFinDetail.setMaxWidth(320);
+        lblFinDetail.setStyle("-fx-text-fill: #5d4037; -fx-font-size: 12;");
+
+        btnRevanche = new Button("Proposer une revanche");
+        btnRevanche.setStyle("-fx-background-color: #6a1b9a; -fx-text-fill: white; -fx-background-radius: 8;");
+        btnRevanche.setOnAction(e -> onProposerRevanche());
+
+        btnDeconnecter = new Button("Se deconnecter");
+        btnDeconnecter.setStyle("-fx-background-color: #546e7a; -fx-text-fill: white; -fx-background-radius: 8;");
+        btnDeconnecter.setOnAction(e -> onSeDeconnecter());
+
+        HBox actions = new HBox(10, btnRevanche, btnDeconnecter);
+        actions.setAlignment(Pos.CENTER);
+
+        VBox card = new VBox(12, lblFinTitre, lblFinDetail, actions);
+        card.setAlignment(Pos.CENTER);
+        card.setPadding(new Insets(20));
+        card.setMaxWidth(380);
+        card.setStyle("-fx-background-color: rgba(255,248,240,0.97);"
+                + "-fx-background-radius: 16;"
+                + "-fx-border-color: rgba(63,42,29,0.20);"
+                + "-fx-border-radius: 16;");
+
+        StackPane overlay = new StackPane(card);
+        overlay.setAlignment(Pos.CENTER);
+        overlay.setStyle("-fx-background-color: rgba(0,0,0,0.45);");
+        overlay.setVisible(false);
+        overlay.setManaged(false);
+        return overlay;
+    }
+
+    private void afficherOverlayFinPartie(String titre, String detail) {
+        if (overlayFinPartie == null) return;
+        lblFinTitre.setText(titre);
+        lblFinDetail.setText(detail);
+        btnRevanche.setDisable(revancheDemandee || joueur == null);
+        btnDeconnecter.setDisable(joueur == null);
+        overlayFinPartie.setVisible(true);
+        overlayFinPartie.setManaged(true);
+    }
+
+    private void masquerOverlayFinPartie() {
+        if (overlayFinPartie == null) return;
+        overlayFinPartie.setVisible(false);
+        overlayFinPartie.setManaged(false);
+    }
+
+    private void onProposerRevanche() {
+        if (joueur == null || revancheDemandee) return;
+        revancheDemandee = true;
+        btnRevanche.setDisable(true);
+        joueur.proposerRevanche();
+        lblInfo.setText("Demande de revanche envoyée...");
+        ajouterMessageChat("Systeme", "Demande de revanche envoyée.");
+    }
+
+    private void onSeDeconnecter() {
+        if (joueur != null) {
+            joueur.disconnectedServer();
+        }
+        if (getScene() != null && getScene().getWindow() instanceof Stage stage) {
+            stage.close();
+        }
     }
 
     private void appliquerResponsiveDamier(DamierView vue) {

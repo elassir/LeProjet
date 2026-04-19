@@ -40,6 +40,8 @@ public class CaseRenderer {
 
     private static final Color SELECTION_FILL = Color.web("#f6f669", 0.75);
     private static final Color DESTINATION_FILL = Color.web("#829769", 0.45);
+    private static final Color PRISE_FORCEE_CONTOUR = Color.web("#00bcd4", 0.96);
+    private static final Color PRISE_FORCEE_LUEUR = Color.web("#26c6da", 0.72);
 
     // Pièces
     private static final Color PIECE_NOIRE_CENTRE = Color.web("#3d3d3d");
@@ -55,7 +57,8 @@ public class CaseRenderer {
     /**
      * Crée le nœud graphique d'une case du damier.
      */
-    public static StackPane creerCaseNode(Case cs, boolean selected, boolean isDest, boolean isCaptureDest) {
+    public static StackPane creerCaseNode(Case cs, boolean selected, boolean isDest,
+                                          boolean isCaptureDest, boolean isForcedCapturePiece) {
         Rectangle fond = new Rectangle(TAILLE_CASE, TAILLE_CASE);
         fond.setArcWidth(0);
         fond.setArcHeight(0);
@@ -79,6 +82,19 @@ public class CaseRenderer {
         Piece piece = cs.getPiece();
         if (piece != null) {
             cell.getChildren().add(creerNoeudPiece(piece));
+
+            if (isForcedCapturePiece) {
+                Circle forcedRing = new Circle(TAILLE_CASE * 0.42);
+                forcedRing.setFill(Color.TRANSPARENT);
+                forcedRing.setStroke(PRISE_FORCEE_CONTOUR);
+                forcedRing.setStrokeWidth(TAILLE_CASE * 0.075);
+                DropShadow forcedGlow = new DropShadow();
+                forcedGlow.setRadius(18);
+                forcedGlow.setColor(PRISE_FORCEE_LUEUR);
+                forcedRing.setEffect(forcedGlow);
+                cell.getChildren().add(forcedRing);
+                cell.getStyleClass().add("cell-forced-capture");
+            }
         }
 
         // Indicateur de destination (point ou cercle)

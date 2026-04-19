@@ -19,6 +19,7 @@ public class Joueur {
     private final String pseudo;
     private final List<Message> messagesEnAttente = new ArrayList<>();
     private InterfaceGraphique view;
+    private volatile boolean deconnecte;
 
     /** Couleur assignée par le serveur ("BLANC" ou "NOIR"). */
     private String couleurAssignee;
@@ -54,7 +55,18 @@ public class Joueur {
         sendMessage(Message.abandon(couleur));
     }
 
+    public void proposerRevanche() {
+        sendMessage(Message.demandeRevanche(pseudo));
+    }
+
+    public void repondreRevanche(boolean acceptee) {
+        sendMessage(Message.reponseRevanche(pseudo, acceptee));
+    }
+
     public void sendMessage(Message mess) {
+        if (deconnecte) {
+            return;
+        }
         try {
             System.out.println("[CLIENT][SOCKET][OUT] " + mess.toDebugJson());
             out.writeObject(mess);
@@ -82,6 +94,8 @@ public class Joueur {
     // ── Déconnexion ────────────────────────────────────────────────────
 
     public void disconnectedServer() {
+        if (deconnecte) return;
+        deconnecte = true;
         try {
             if (out != null) out.close();
             socket.close();

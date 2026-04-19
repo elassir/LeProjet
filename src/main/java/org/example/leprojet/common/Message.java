@@ -8,7 +8,7 @@ import java.io.Serializable;
  */
 public class Message implements Serializable {
 
-    private static final long serialVersionUID = 2L;
+    private static final long serialVersionUID = 3L;
 
     private MessageType type;
     private String sender;
@@ -24,6 +24,7 @@ public class Message implements Serializable {
     private String couleur;
     private String pseudoBlanc;
     private String pseudoNoir;
+    private Boolean revancheAcceptee;
     private long timestamp;
 
     // ── Constructeur texte (rétro-compatible) ──────────────────────────
@@ -105,6 +106,16 @@ public class Message implements Serializable {
         return m;
     }
 
+    public static Message demandeRevanche(String sender) {
+        return new Message(MessageType.REVANCHE_DEMANDE, sender, "REVANCHE");
+    }
+
+    public static Message reponseRevanche(String sender, boolean acceptee) {
+        Message m = new Message(MessageType.REVANCHE_REPONSE, sender, acceptee ? "ACCEPTEE" : "REFUSEE");
+        m.revancheAcceptee = acceptee;
+        return m;
+    }
+
     // ── Getters ────────────────────────────────────────────────────────
 
     public MessageType getType()     { return type; }
@@ -117,6 +128,7 @@ public class Message implements Serializable {
     public String getCouleur()       { return couleur; }
     public String getPseudoBlanc()   { return pseudoBlanc; }
     public String getPseudoNoir()    { return pseudoNoir; }
+    public Boolean getRevancheAcceptee() { return revancheAcceptee; }
     public long getTimestamp()       { return timestamp; }
 
     // ── Setters ────────────────────────────────────────────────────────
@@ -126,6 +138,7 @@ public class Message implements Serializable {
     public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
     public void setPseudoBlanc(String pseudoBlanc) { this.pseudoBlanc = pseudoBlanc; }
     public void setPseudoNoir(String pseudoNoir) { this.pseudoNoir = pseudoNoir; }
+    public void setRevancheAcceptee(Boolean revancheAcceptee) { this.revancheAcceptee = revancheAcceptee; }
 
     public String toDebugJson() {
         return "{"
@@ -139,6 +152,7 @@ public class Message implements Serializable {
                 + "\"couleur\":\"" + safe(couleur) + "\","
                 + "\"pseudoBlanc\":\"" + safe(pseudoBlanc) + "\","
                 + "\"pseudoNoir\":\"" + safe(pseudoNoir) + "\","
+                + "\"revancheAcceptee\":" + (revancheAcceptee == null ? "null" : revancheAcceptee) + ","
                 + "\"timestamp\":" + timestamp
                 + "}";
     }
@@ -157,6 +171,9 @@ public class Message implements Serializable {
             case INFOS_JOUEURS -> "JOUEURS BLANC=" + pseudoBlanc + " NOIR=" + pseudoNoir;
             case FIN_PARTIE -> "FIN gagnant=" + couleur;
             case ABANDON -> "ABANDON couleur=" + couleur;
+            case REVANCHE_DEMANDE -> "REVANCHE demandee par=" + sender;
+            case REVANCHE_REPONSE -> "REVANCHE " + (Boolean.TRUE.equals(revancheAcceptee) ? "acceptee" : "refusee")
+                    + " par=" + sender;
             default -> sender + " : " + content;
         };
     }

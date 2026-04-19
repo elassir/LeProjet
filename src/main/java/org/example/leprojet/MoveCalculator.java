@@ -346,6 +346,23 @@ public class MoveCalculator {
     }
 
     /**
+     * Retourne les pièces qui disposent d'au moins une prise légale.
+     *
+     * @param pieces pieces a analyser
+     * @param plateau plateau de jeu
+     * @return pieces pouvant effectuer une prise
+     */
+    public static List<Piece> getPiecesAvecPrisePossible(List<Piece> pieces, Plateau plateau) {
+        List<Piece> resultat = new ArrayList<>();
+        for (Piece piece : pieces) {
+            if (!getPrisesPossibles(piece, plateau).isEmpty()) {
+                resultat.add(piece);
+            }
+        }
+        return resultat;
+    }
+
+    /**
      * Retourne true si au moins une des pièces de la liste a un mouvement (prise ou déplacement).
      *
      * @param pieces pieces a analyser

@@ -28,6 +28,7 @@ public class Server {
     private final List<ConnectedClient> clients;
     private Arbitre arb;
     private boolean partieDemarree;
+    private ConnectedClient demandeurRevanche;
 
     /**
      * Cree un serveur de jeu et demarre le thread d'ecoute des connexions.
@@ -39,6 +40,7 @@ public class Server {
         this.port = port;
         this.clients = new ArrayList<>();
         this.partieDemarree = false;
+        this.demandeurRevanche = null;
         new Thread(new Connection(this)).start();
         System.out.println("[SERVEUR] Démarré sur le port " + port);
     }
@@ -84,6 +86,7 @@ public class Server {
         arb = new Arbitre(nomBlanc, nomNoir);
         arb.initialiserPartie();
         partieDemarree = true;
+        demandeurRevanche = null;
 
         diffuserInfosJoueurs();
         broadcastToAll(Message.debutPartie());
@@ -123,6 +126,19 @@ public class Server {
         return null;
     }
 
+    private ConnectedClient trouverAdversaire(ConnectedClient client) {
+        for (ConnectedClient autre : clients) {
+            if (autre != client) {
+                return autre;
+            }
+        }
+        return null;
+    }
+
+    private boolean partieTerminee() {
+        return arb != null && arb.getEtat() != EtatPartie.EN_COURS && arb.getEtat() != EtatPartie.EN_ATTENTE;
+    }
+
     // ── Réception d'un message d'un client ─────────────────────────────
 
     /**
@@ -136,7 +152,9 @@ public class Server {
         switch (mess.getType()) {
             case HELLO_PSEUDO -> traiterHelloPseudo(sender, mess);
             case COUP -> traiterCoup(sender, mess);
-            case ABANDON -> traiterAbandon(sender, mess);
+            case ABANDON -> traiterAbandon(sender);
+            case REVANCHE_DEMANDE -> traiterDemandeRevanche(sender);
+            case REVANCHE_REPONSE -> traiterReponseRevanche(sender, mess);
             case TEXTE -> traiterTexte(sender, mess);
             default -> {
                 mess.setSender(sender.getPseudoAffiche());
@@ -175,15 +193,71 @@ public class Server {
         broadcastToAll(diffusion);
     }
 
-    private void traiterAbandon(ConnectedClient sender, Message mess) {
+    private void traiterAbandon(ConnectedClient sender) {
         if (arb != null && arb.getEtat() == EtatPartie.EN_COURS) {
             Couleur couleurAbandonne = "BLANC".equals(sender.getCouleur()) ? Couleur.BLANC : Couleur.NOIR;
             arb.abandonner(couleurAbandonne);
         }
+        demandeurRevanche = null;
         String gagnant = "BLANC".equals(sender.getCouleur()) ? "NOIR" : "BLANC";
         System.out.println("[SERVEUR] Abandon reçu du client " + sender.getPseudoAffiche() + " -> gagnant=" + gagnant);
         broadcastToAll(Message.finPartie(gagnant));
         broadcastToAll(new Message("Serveur", "Le joueur " + sender.getPseudoAffiche() + " a abandonné."));
+    }
+
+    private void traiterDemandeRevanche(ConnectedClient sender) {
+        if (!partieTerminee()) {
+            sender.sendMessage(new Message("Serveur", "La revanche n'est disponible qu'en fin de partie."));
+            return;
+        }
+
+        ConnectedClient adversaire = trouverAdversaire(sender);
+        if (adversaire == null) {
+            sender.sendMessage(new Message("Serveur", "Aucun adversaire connecté pour une revanche."));
+            return;
+        }
+
+        if (demandeurRevanche == sender) {
+            sender.sendMessage(new Message("Serveur", "Votre demande de revanche est déjà en attente."));
+            return;
+        }
+
+        if (demandeurRevanche != null) {
+            sender.sendMessage(new Message("Serveur", "Une demande de revanche est déjà en attente."));
+            return;
+        }
+
+        demandeurRevanche = sender;
+        adversaire.sendMessage(Message.demandeRevanche(sender.getPseudoAffiche()));
+        sender.sendMessage(new Message("Serveur", "Demande de revanche envoyée à " + adversaire.getPseudoAffiche() + "."));
+    }
+
+    private void traiterReponseRevanche(ConnectedClient sender, Message mess) {
+        if (demandeurRevanche == null) {
+            sender.sendMessage(new Message("Serveur", "Aucune demande de revanche en attente."));
+            return;
+        }
+
+        if (sender == demandeurRevanche) {
+            sender.sendMessage(new Message("Serveur", "Vous ne pouvez pas répondre à votre propre demande."));
+            return;
+        }
+
+        ConnectedClient demandeur = demandeurRevanche;
+        demandeurRevanche = null;
+        boolean acceptee = Boolean.TRUE.equals(mess.getRevancheAcceptee());
+
+        if (acceptee) {
+            Message reponse = Message.reponseRevanche(sender.getPseudoAffiche(), true);
+            demandeur.sendMessage(reponse);
+            sender.sendMessage(reponse);
+            broadcastToAll(new Message("Serveur", sender.getPseudoAffiche() + " a accepté la revanche."));
+            demarrerPartie();
+            return;
+        }
+
+        demandeur.sendMessage(Message.reponseRevanche(sender.getPseudoAffiche(), false));
+        sender.sendMessage(new Message("Serveur", "Vous avez refusé la revanche."));
     }
 
     // ── Traitement d'un coup ───────────────────────────────────────────
@@ -238,9 +312,11 @@ public class Server {
             System.out.println("[SERVEUR] Coup validé : " + coupOk + " | " + arb);
 
             // Vérifier fin de partie
-            if (arb.getGagnant() != null) {
-                broadcastToAll(Message.finPartie(arb.getGagnant().getCouleur().toString()));
-                System.out.println("[SERVEUR] Partie terminée ! Gagnant : " + arb.getGagnant());
+            if (arb.getEtat() != EtatPartie.EN_COURS && arb.getEtat() != EtatPartie.EN_ATTENTE) {
+                String gagnant = (arb.getGagnant() != null) ? arb.getGagnant().getCouleur().toString() : null;
+                demandeurRevanche = null;
+                broadcastToAll(Message.finPartie(gagnant));
+                System.out.println("[SERVEUR] Partie terminée ! état=" + arb.getEtat() + " gagnant=" + arb.getGagnant());
             }
         } else {
             sender.sendMessage(new Message(MessageType.COUP_INVALIDE, "Serveur", "Coup invalide."));
@@ -271,6 +347,9 @@ public class Server {
         discClient.closeClient();
         clients.remove(discClient);
         partieDemarree = false;
+        if (demandeurRevanche == discClient) {
+            demandeurRevanche = null;
+        }
         broadcastToAll(new Message("Serveur", "Le joueur " + discClient.getPseudoAffiche() + " s'est déconnecté."));
         System.out.println("[SERVEUR] Client " + discClient.getPseudoAffiche() + " déconnecté.");
     }

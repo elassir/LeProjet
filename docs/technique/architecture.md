@@ -18,7 +18,7 @@ src/main/java/org/example/leprojet/
 |-- MoveCalculator.java
 |-- Coup.java
 |-- CoupCallback.java
-|-- HelloApplication.java
+|-- ClientJoueur.java
 |-- TestPartieApp.java
 |-- core/
 |   |-- Plateau.java
@@ -55,7 +55,7 @@ Orchestration / application:
 - `Arbitre`: moteur de regles et tour de jeu.
 - `MoveCalculator`: calcul stateless des deplacements et prises possibles.
 - `Coup`, `CoupCallback`: abstraction de coup et contrat callback UI.
-- `HelloApplication`: entree menu principal JavaFX.
+- `ClientJoueur`: entree JavaFX du client reseau.
 - `TestPartieApp`: simulation locale en 2 fenetres.
 
 ### `org.example.leprojet.core`
@@ -92,17 +92,14 @@ Serveur de partie:
 ### `org.example.leprojet.joueur`
 
 Client reseau:
-- `ClientJoueur`: point d'entree JavaFX du client reseau.
 - `Joueur`: facade socket (envoi + routage des messages recus vers la vue).
 - `JoueurReceive`: thread de lecture bloquante depuis le serveur.
 - `InterfaceGraphique`: adaptation UI des messages serveurs (`ASSIGNATION_COULEUR`, `COUP_VALIDE`, etc.).
 
 ## Points d'entree
 
-- Application menu/local: `org.example.leprojet.HelloApplication`
-- Application de test local: `org.example.leprojet.TestPartieApp`
+- Client reseau: `org.example.leprojet.ClientJoueur`
 - Serveur: `org.example.leprojet.server.MainServer`
-- Client reseau: `org.example.leprojet.joueur.ClientJoueur`
 
 ## Cycle de vie d'une session reseau
 

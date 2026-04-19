@@ -32,6 +32,12 @@ public enum MessageType {
     /** Client → Serveur : le joueur abandonne la partie. */
     ABANDON,
 
+    /** Client → Serveur puis Serveur → Client : demande de revanche. */
+    REVANCHE_DEMANDE,
+
+    /** Client → Serveur puis Serveur → Client : réponse à une revanche. */
+    REVANCHE_REPONSE,
+
     /** Message texte classique (chat / info). */
     TEXTE
 }

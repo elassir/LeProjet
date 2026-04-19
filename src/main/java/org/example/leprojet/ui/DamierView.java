@@ -15,7 +15,9 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Vue du damier 10×10.
@@ -29,11 +31,12 @@ public class DamierView extends BorderPane {
 
     private Plateau plateau;
     private final GridPane grille;
-    private final Arbitre arb;
+    private Arbitre arb;
     private final Couleur couleurJoueur;
 
     private Piece pieceSelectionnee;
     private final List<Case> destinationsPossibles = new ArrayList<>();
+    private final Set<Piece> piecesAvecPriseObligatoire = new HashSet<>();
 
     /** Callback coup (mode local ou réseau). */
     private CoupCallback coupCallback;
@@ -86,6 +89,11 @@ public class DamierView extends BorderPane {
     public void setOnCoupJoue(Runnable r)        { this.onCoupJoue = r; }
     public void setCoupCallback(CoupCallback cb) { this.coupCallback = cb; }
 
+    public void setArbitre(Arbitre arb) {
+        this.arb = arb;
+        rafraichir();
+    }
+
     public void setPlateau(Plateau plateau) {
         this.plateau = plateau;
         rafraichir();
@@ -104,8 +112,16 @@ public class DamierView extends BorderPane {
     }
 
     private void redessinGrille() {
+        recalculerPiecesAvecPriseObligatoire();
         grille.getChildren().clear();
         dessinerGrille();
+    }
+
+    private void recalculerPiecesAvecPriseObligatoire() {
+        piecesAvecPriseObligatoire.clear();
+        if (arb == null || couleurJoueur == null || arb.getEtat() != EtatPartie.EN_COURS) return;
+        if (arb.getJoueurCourant() == null || arb.getJoueurCourant().getCouleur() != couleurJoueur) return;
+        piecesAvecPriseObligatoire.addAll(arb.getPiecesAvecPriseObligatoire(couleurJoueur));
     }
 
     private void autoSelectChaine() {
@@ -129,8 +145,9 @@ public class DamierView extends BorderPane {
                 boolean selected = pieceSelectionnee != null && pieceSelectionnee.getPosition() == cs;
                 boolean isDest = destinationsPossibles.contains(cs);
                 boolean isCaptureDest = isDest && !cs.estVide();
+                boolean isForcedCapturePiece = cs.getPiece() != null && piecesAvecPriseObligatoire.contains(cs.getPiece());
 
-                StackPane cell = CaseRenderer.creerCaseNode(cs, selected, isDest, isCaptureDest);
+                StackPane cell = CaseRenderer.creerCaseNode(cs, selected, isDest, isCaptureDest, isForcedCapturePiece);
                 cell.setOnMouseClicked(e -> onClic(cs));
                 grille.add(cell, c, l);
             }
