@@ -1,0 +1,66 @@
+@startuml
+
+title Diagramme de composants - Jeu de dames en ligne
+skinparam componentStyle rectangle
+
+package "Client JavaFX" {
+  [ClientJoueur]
+  [MenuView]
+  [InterfaceGraphique]
+  [DamierView]
+  [Joueur]
+  [JoueurReceive]
+  [SoundManager]
+}
+
+package "Protocole" {
+  [Message]
+  [MessageType]
+}
+
+package "Serveur" {
+  [MainServer]
+  [Connection]
+  [ConnectedClient]
+  [Server]
+}
+
+package "Noyau metier" {
+  [Arbitre]
+  [MoveCalculator]
+  [Plateau]
+  [Piece/Case/EtatPartie]
+}
+
+[ClientJoueur] --> [MenuView]
+[ClientJoueur] --> [InterfaceGraphique]
+[InterfaceGraphique] --> [DamierView]
+[InterfaceGraphique] --> [Joueur]
+[Joueur] --> [JoueurReceive]
+[InterfaceGraphique] --> [SoundManager]
+
+[Joueur] ..> [Message]
+[JoueurReceive] ..> [Message]
+[Server] ..> [Message]
+[Message] --> [MessageType]
+
+[MainServer] --> [Server]
+[Server] --> [Connection]
+[Connection] --> [ConnectedClient]
+[ConnectedClient] --> [Server]
+
+[Server] --> [Arbitre]
+[Arbitre] --> [MoveCalculator]
+[Arbitre] --> [Plateau]
+[Plateau] --> [Piece/Case/EtatPartie]
+[DamierView] ..> [Arbitre]
+
+note right of [Server]
+Valide les coups,
+assigne les couleurs,
+gere fin de partie,
+abandon et revanche.
+end note
+
+@enduml
+

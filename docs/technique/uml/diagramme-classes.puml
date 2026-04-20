@@ -1,0 +1,279 @@
+@startuml Diagramme_Classes_LeProjet
+
+title Diagramme de classes - etat actuel du code
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+left to right direction
+
+package "core" {
+  enum Couleur {
+    BLANC
+    NOIR
+  }
+
+  enum EtatPartie {
+    EN_ATTENTE
+    EN_COURS
+    BLANC_GAGNE
+    NOIR_GAGNE
+    MATCH_NUL
+  }
+
+  class Case {
+    - couleur: Couleur
+    - ligne: int
+    - colonne: int
+    - piece: Piece
+    + estVide(): Boolean
+  }
+
+  abstract class Piece {
+    # couleur: Couleur
+    # position: Case
+  }
+
+  class Pion
+  class Dame
+
+  class Plateau {
+    + NB_COLONNES: int
+    + NB_LIGNES: int
+    - cases: Case[][]
+    - noires: List<Piece>
+    - blanches: List<Piece>
+    + initPions(): void
+    + deplacerPiece(piece: Piece, dest: Case): void
+    + supprimerPiece(piece: Piece): void
+    + promouvoirPion(pion: Pion): Dame
+  }
+
+  class JoueurPartie {
+    - id: int
+    - nom: String
+    - couleur: Couleur
+  }
+}
+
+package "moteur" {
+  class Arbitre {
+    - plateau: Plateau
+    - joueurBlanc: JoueurPartie
+    - joueurNoir: JoueurPartie
+    - joueurCourant: JoueurPartie
+    - etat: EtatPartie
+    - pieceEnChaine: Piece
+    + initialiserPartie(): void
+    + jouerDeplacement(piece: Piece, destination: Case): boolean
+    + jouerPrise(piece: Piece, piecePrise: Piece, destination: Case): boolean
+    + joueurCourantAPrisePossible(): boolean
+    + getPrisesPossiblesPour(piece: Piece): List<Case>
+    + getPiecesAvecPriseObligatoire(couleur: Couleur): List<Piece>
+    + abandonner(couleurAbandonne: Couleur): void
+  }
+
+  class MoveCalculator <<utility>> {
+    + getDeplacementsPossibles(piece: Piece, plateau: Plateau): List<Case>
+    + getPrisesPossibles(piece: Piece, plateau: Plateau): List<Case>
+    + estDeplacementValide(piece: Piece, destination: Case, plateau: Plateau): boolean
+    + estPriseValide(piece: Piece, piecePrise: Piece, destination: Case, plateau: Plateau): boolean
+    + trouverPiecePrise(piece: Piece, destination: Case, plateau: Plateau): Piece
+  }
+
+  class Coup {
+    - caseDepart: Case
+    - caseArrivee: Case
+    - piecePrise: Piece
+    - type: TypeCoup
+  }
+
+  enum TypeCoup {
+    DEPLACEMENT
+    PRISE
+  }
+
+  interface CoupCallback {
+    + onCoup(lDep: int, cDep: int, lArr: int, cArr: int): void
+  }
+}
+
+package "communication" {
+  enum MessageType {
+    HELLO_PSEUDO
+    ASSIGNATION_COULEUR
+    INFOS_JOUEURS
+    DEBUT_PARTIE
+    COUP
+    COUP_VALIDE
+    COUP_INVALIDE
+    FIN_PARTIE
+    ABANDON
+    REVANCHE_DEMANDE
+    REVANCHE_REPONSE
+    TEXTE
+  }
+
+  class Message {
+    - type: MessageType
+    - sender: String
+    - content: String
+    - ligneDepart: int
+    - colonneDepart: int
+    - ligneArrivee: int
+    - colonneArrivee: int
+    - couleur: String
+    - pseudoBlanc: String
+    - pseudoNoir: String
+    - revancheAcceptee: Boolean
+    - timestamp: long
+  }
+}
+
+package "serveur" {
+  class MainServer
+
+  class Server {
+    - port: int
+    - clients: List<ConnectedClient>
+    - arb: Arbitre
+    - partieDemarree: boolean
+    - demandeurRevanche: ConnectedClient
+    + addClient(newClient: ConnectedClient): void
+    + onMessageRecu(sender: ConnectedClient, mess: Message): void
+    + broadcastToAll(mess: Message): void
+    + disconnectedClient(discClient: ConnectedClient): void
+  }
+
+  class Connection {
+    - server: Server
+    - serverSocket: ServerSocket
+    + run(): void
+  }
+
+  class ConnectedClient {
+    - id: int
+    - server: Server
+    - socket: Socket
+    - out: ObjectOutputStream
+    - in: ObjectInputStream
+    - couleur: String
+    - pseudo: String
+    - helloPseudoRecu: boolean
+    + sendMessage(mess: Message): void
+    + run(): void
+    + closeClient(): void
+  }
+}
+
+package "client" {
+  class ClientJoueur
+
+  class Joueur {
+    - socket: Socket
+    - out: ObjectOutputStream
+    - pseudo: String
+    - messagesEnAttente: List<Message>
+    - view: InterfaceGraphique
+    - deconnecte: boolean
+    - couleurAssignee: String
+    + envoyerCoup(lDep: int, cDep: int, lArr: int, cArr: int): void
+    + envoyerMessageTexte(contenu: String): boolean
+    + abandonnerPartie(): void
+    + proposerRevanche(): void
+    + repondreRevanche(acceptee: boolean): void
+    + messageReceived(mess: Message): void
+  }
+
+  class JoueurReceive {
+    - joueur: Joueur
+    - socket: Socket
+    + run(): void
+  }
+
+  class InterfaceGraphique {
+    - joueur: Joueur
+    - arb: Arbitre
+    - damierView: DamierView
+    - maCouleur: Couleur
+    + setClient(joueur: Joueur): void
+    + onMessageRecu(mess: Message): void
+  }
+}
+
+package "ui" {
+  class MenuView
+  interface OnNetworkStart
+
+  class DamierView {
+    - plateau: Plateau
+    - arb: Arbitre
+    - couleurJoueur: Couleur
+    - pieceSelectionnee: Piece
+    - coupCallback: CoupCallback
+    + setCoupCallback(cb: CoupCallback): void
+    + rafraichir(): void
+  }
+
+  class CaseRenderer <<utility>>
+
+  class SoundManager <<utility>> {
+    + playMove(): void
+    + playCapture(): void
+    + playEndgame(): void
+  }
+}
+
+Piece <|-- Pion
+Piece <|-- Dame
+Coup +-- TypeCoup
+MenuView +-- OnNetworkStart
+
+Plateau *-- "100" Case
+Case o-- "0..1" Piece
+Plateau o-- "0..*" Piece : blanches/noires
+JoueurPartie --> Couleur
+Case --> Couleur
+Piece --> Couleur
+
+Arbitre *-- Plateau
+Arbitre --> JoueurPartie : joueurBlanc/noir/courant
+Arbitre --> EtatPartie
+Arbitre --> MoveCalculator
+MoveCalculator ..> Case
+MoveCalculator ..> Piece
+MoveCalculator ..> Plateau
+Coup --> Case
+Coup --> Piece
+
+Message --> MessageType
+Server --> Arbitre
+Server o-- ConnectedClient
+Server --> Message
+Connection --> Server
+Connection --> ConnectedClient
+ConnectedClient --> Server
+ConnectedClient --> Message
+MainServer --> Server
+
+Joueur --> InterfaceGraphique
+Joueur --> JoueurReceive
+Joueur --> Message
+JoueurReceive --> Joueur
+JoueurReceive --> Message
+InterfaceGraphique --> Joueur
+InterfaceGraphique --> Arbitre
+InterfaceGraphique --> DamierView
+InterfaceGraphique --> Message
+
+ClientJoueur --> MenuView
+ClientJoueur --> Joueur
+ClientJoueur --> InterfaceGraphique
+DamierView --> Plateau
+DamierView --> Arbitre
+DamierView --> MoveCalculator
+DamierView --> CoupCallback
+DamierView --> SoundManager
+DamierView ..> CaseRenderer
+
+@enduml
+

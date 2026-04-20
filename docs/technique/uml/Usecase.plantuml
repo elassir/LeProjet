@@ -1,0 +1,125 @@
+@startuml Usecase_JeuDeDames
+
+left to right direction
+skinparam actorStyle awesome
+
+title Diagramme de cas d'utilisation
+
+' ============================
+' Acteurs
+' ============================
+actor "Joueur" as J
+actor "Serveur de jeu" as S
+
+' ============================
+' Système
+' ============================
+rectangle "Jeu de Dames" {
+
+    ' --- Accès à la session en ligne ---
+    usecase "Saisir pseudo, hôte\net port" as UC1
+    usecase "Se connecter\nau serveur" as UC2
+    usecase "Rejoindre une partie\nen ligne" as UC3
+    usecase "Consulter le damier\net l'état de partie" as UC4
+
+    ' --- Jeu ---
+    usecase "Jouer un coup" as UC5
+    usecase "Afficher les coups\nvalidés" as UC6
+    usecase "Voir les cases\njouables" as UC7
+    usecase "Entendre les sons\nde jeu" as UC8
+
+    ' --- Interaction réseau ---
+    usecase "Échanger dans le chat" as UC9
+    usecase "Abandonner la partie" as UC10
+    usecase "Consulter l'écran\nde fin de partie" as UC11
+    usecase "Proposer une revanche" as UC12
+    usecase "Répondre à une demande\nde revanche" as UC13
+    usecase "Se déconnecter" as UC14
+
+    ' --- Règles métier internes ---
+    usecase "Valider un coup" as INC1
+    usecase "Vérifier le tour\nde jeu" as INC2
+    usecase "Vérifier la prise\nobligatoire" as INC3
+    usecase "Gérer la chaîne\nde prises" as INC4
+    usecase "Promouvoir un pion\nen dame" as INC5
+    usecase "Détecter la fin\nde partie" as INC6
+}
+
+' ============================
+' Relations Joueur
+' ============================
+J --> UC1
+J --> UC2
+J --> UC3
+J --> UC4
+J --> UC5
+J --> UC9
+J --> UC10
+J --> UC11
+J --> UC12
+J --> UC13
+J --> UC14
+
+' ============================
+' Relations Serveur
+' ============================
+S --> UC2
+S --> UC3
+S --> UC6
+S --> UC9
+S --> UC11
+S --> UC13
+
+' ============================
+' Relations <<include>>
+' ============================
+UC2 ..> UC1 : <<include>>
+UC3 ..> UC2 : <<include>>
+UC5 ..> INC1 : <<include>>
+INC1 ..> INC2 : <<include>>
+INC1 ..> INC3 : <<include>>
+UC5 ..> INC4 : <<include>>
+UC5 ..> INC5 : <<include>>
+UC5 ..> INC6 : <<include>>
+UC10 ..> INC6 : <<include>>
+UC12 ..> UC11 : <<include>>
+UC13 ..> UC11 : <<include>>
+
+' ============================
+' Relations <<extend>>
+' ============================
+UC5 <.. UC7 : <<extend>>
+UC5 <.. UC8 : <<extend>>
+UC11 <.. UC12 : <<extend>>
+UC11 <.. UC13 : <<extend>>
+UC4 <.. UC6 : <<extend>>
+
+' ============================
+' Notes
+' ============================
+note right of INC1
+  Validation réalisée côté serveur,
+  puis réappliquée côté client pour
+  synchroniser l'affichage.
+end note
+
+
+note right of INC4
+  Après une prise, si la même pièce
+  peut encore capturer, le tour ne passe pas.
+  La pièce reste imposée jusqu'à la fin de la chaîne.
+end note
+
+note right of INC6
+  Fin de partie déclenchée si :
+  - un camp n'a plus de pièce, ou
+  - le joueur courant n'a plus de coup légal, ou
+  - un joueur abandonne.
+end note
+
+note bottom of UC12
+  La revanche n'est disponible
+  qu'après la réception de FIN_PARTIE.
+end note
+
+@enduml

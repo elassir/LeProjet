@@ -1,0 +1,61 @@
+@startuml
+
+title Sequence - Connexion, partie en ligne, revanche
+
+autonumber
+actor JoueurA
+actor JoueurB
+participant "Client A\n(Joueur + InterfaceGraphique)" as CA
+participant "Client B\n(Joueur + InterfaceGraphique)" as CB
+participant "Server" as S
+participant "Arbitre" as A
+
+== Connexion ==
+JoueurA -> CA : Saisit pseudo/host/port
+CA -> S : HELLO_PSEUDO
+S -> CA : ASSIGNATION_COULEUR(NOIR)
+
+JoueurB -> CB : Saisit pseudo/host/port
+CB -> S : HELLO_PSEUDO
+S -> CB : ASSIGNATION_COULEUR(BLANC)
+S -> CA : INFOS_JOUEURS
+S -> CB : INFOS_JOUEURS
+S -> A : initialiserPartie()
+S -> CA : DEBUT_PARTIE
+S -> CB : DEBUT_PARTIE
+
+== Boucle de jeu ==
+JoueurB -> CB : Joue un coup
+CB -> S : COUP(lDep,cDep,lArr,cArr)
+S -> A : jouerPrise(...) ou jouerDeplacement(...)
+alt Coup valide
+  S -> CA : COUP_VALIDE
+  S -> CB : COUP_VALIDE
+else Coup invalide
+  S -> CB : COUP_INVALIDE
+end
+
+opt Fin de partie detectee
+  S -> CA : FIN_PARTIE(gagnant)
+  S -> CB : FIN_PARTIE(gagnant)
+end
+
+== Revanche ==
+JoueurA -> CA : Proposer revanche
+CA -> S : REVANCHE_DEMANDE
+S -> CB : REVANCHE_DEMANDE
+
+alt JoueurB accepte
+  CB -> S : REVANCHE_REPONSE(acceptee=true)
+  S -> CA : REVANCHE_REPONSE(acceptee=true)
+  S -> CB : REVANCHE_REPONSE(acceptee=true)
+  S -> A : initialiserPartie() (nouvelle instance)
+  S -> CA : DEBUT_PARTIE
+  S -> CB : DEBUT_PARTIE
+else JoueurB refuse
+  CB -> S : REVANCHE_REPONSE(acceptee=false)
+  S -> CA : REVANCHE_REPONSE(acceptee=false)
+end
+
+@enduml
+

@@ -15,7 +15,6 @@ Le projet consiste à développer une application permettant de jouer au jeu de 
 - 20 pions par joueur (blanc / noir)
 - Les pions se déplacent en diagonale vers l'avant uniquement
 - Une prise est **obligatoire** si elle est possible
-- En cas de choix, la **prise maximale** est obligatoire
 - Un pion atteignant la dernière rangée adverse devient une **dame**
 - La dame se déplace en diagonale sur toute la longueur
 - La partie se termine quand un joueur n'a plus de pions ou ne peut plus jouer
@@ -71,7 +70,6 @@ Le projet consiste à développer une application permettant de jouer au jeu de 
 
 ### 4.1 Gestion du plateau
 - Initialisation automatique des pions en début de partie
-- Représentation interne via une matrice `Board[10][10]`
 - Distinction visuelle case claire / case foncée
 - Mise en évidence des cases de départ et d'arrivée possibles
 
@@ -96,45 +94,6 @@ Le projet consiste à développer une application permettant de jouer au jeu de 
 
 ## 5. Architecture technique
 
-
-### 5.2 Architecture MVC
-
-```
-src/
-├── main/
-│   ├── java/
-│   │   └── com/dames/
-│   │       ├── model/
-│   │       │   ├── Board.java
-│   │       │   ├── Piece.java
-│   │       │   ├── Pion.java
-│   │       │   ├── Dame.java
-│   │       │   ├── Move.java
-│   │       │   ├── Player.java
-│   │       │   └── GameState.java
-│   │       ├── controller/
-│   │       │   ├── GameController.java
-│   │       │   ├── MoveValidator.java
-│   │       │   └── AIController.java
-│   │       ├── view/
-│   │       │   ├── BoardView.java
-│   │       │   ├── CellView.java
-│   │       │   ├── PieceView.java
-│   │       │   └── GameInfoView.java
-│   │       └── App.java
-│   └── resources/
-│       ├── fxml/
-│       │   ├── main.fxml
-│       │   └── menu.fxml
-│       ├── css/
-│       │   └── style.css
-│       └── images/
-└── test/
-    └── java/
-        └── com/dames/
-            ├── model/
-            └── controller/
-```
 
 
 ## 6. Interfaces utilisateur
@@ -306,15 +265,85 @@ src/
 
 ## 7. Conditions de fin de partie
 
-| Règle | Description |
-|-------|-------------|
-| R-FP1 | Un joueur qui n'a **plus de pièces** perd la partie |
+| Règle | Description                                                                            |
+|-------|----------------------------------------------------------------------------------------|
+| R-FP1 | Un joueur qui n'a **plus de pièces** perd la partie                                    |
 | R-FP2 | Un joueur qui **ne peut plus bouger** (toutes ses pièces sont bloquées) perd la partie |
-| R-FP3 | **Match nul** si 25 coups consécutifs sont joués avec seulement des dames, sans prise |
-| R-FP4 | **Match nul** si la même position se répète **3 fois** avec le même joueur à jouer |
-| R-FP5 | **Match nul** si les deux joueurs s'accordent sur un nul |
-| R-FP6 | **Match nul** si une dame seule ne parvient pas à battre 3 dames adverses en 16 coups |
-diagrrame de classe .
-diagramme sequence
-diagramme de temps (gantt)
-diagramme de cas d'utilisation 
+| R-FP3 | un joueur abandonne                                                                    |
+
+## 8) Structure des répertoires et fichiers
+
+```
+LeProjet/
+├── pom.xml                             # Configuration Maven (dépendances, compiler, plugins)
+├── mvnw / mvnw.cmd                     # Maven wrapper (build sans installation Maven)
+├── README.md                            # Aperçu général du projet
+│
+├── docs/                               # Documentation projet
+│   ├── fonctionnel/                    # Documentation metier (usagers)
+│   │   ├── Charge.md                   # Estimations de charge
+│   │   └── README.md                   # Sommaire fonctionnel
+│   │
+│   └── technique/                      # Documentation technique (développeurs)
+│       ├── README.md                   # Index documentation technique
+│       ├── architecture.md             # Ce fichier (architecture générale)
+│       ├── flux-donnees.md             # Protocoles et flux client-serveur
+│       │
+│       └── uml/                        # Diagrammes PlantUML
+│           ├── composants.puml         # Architecture modules/composants
+│           ├── diagramme-classes.puml # Diagramme de classes
+│           ├── sequence-connexion-partie-revanche.puml  # Scenario complet en ligne
+│           └── Usecase.plantuml       # Cas d'utilisation
+│
+├── src/main/java/                     # Code source principal
+│   ├── module-info.java               # Déclaration module Java (exports, requires)
+│   │
+│   └── org/example/leprojet/          # Racine du package
+│       │
+│       ├── ClientJoueur.java          # Point d'entrée JavaFX (fenêtre principale)
+│       ├── Arbitre.java               # Moteur de règles de jeu (tour, validation, fin)
+│       ├── Coup.java                  # Modèle d'un coup joué
+│       ├── CoupCallback.java          # Interface callback (client → serveur ou local)
+│       ├── MoveCalculator.java        # Calculs purs déplacements/prises (pion + dame)
+│       │
+│       ├── core/                      # Modèle métier du jeu
+│       │   ├── Case.java              # Représente une case du damier
+│       │   ├── Piece.java             # Classe abstraite pièce
+│       │   ├── Pion.java              # Implémentation pion (1 case en diagonal)
+│       │   ├── Dame.java              # Implémentation dame (toute la diagonale)
+│       │   ├── Couleur.java           # Énumération BLANC / NOIR
+│       │   ├── Plateau.java           # Grille 10×10 + gestion pièces
+│       │   ├── EtatPartie.java        # États partie (EN_ATTENTE, EN_COURS, BLANC_GAGNE, etc.)
+│       │   └── JoueurPartie.java      # Joueur métier (id, nom, couleur)
+│       │
+│       ├── common/                    # Contrat de communication réseau
+│       │   ├── MessageType.java       # Énumération types messages (HELLO, COUP, FIN_PARTIE, etc.)
+│       │   └── Message.java           # Objet sérializable transportant le message
+│       │
+│       ├── server/                    # Logique serveur
+│       │   ├── MainServer.java        # Point d'entrée serveur (main)
+│       │   ├── Server.java            # Orchestration serveur (clients, partie, arbitre)
+│       │   ├── Connection.java        # Boucle accept() des connexions TCP
+│       │   └── ConnectedClient.java   # Représentation d'un client connecté
+│       │
+│       ├── joueur/                    # Logique client (joueur)
+│       │   ├── Joueur.java            # Transport réseau client (socket, envoi/réception)
+│       │   ├── JoueurReceive.java     # Thread réception messages serveur
+│       │   └── InterfaceGraphique.java # UI jeu en ligne (plateau, chat, overlay fin, revanche)
+│       │
+│       └── ui/                        # Composants visuels
+│           ├── MenuView.java          # Écran de connexion (pseudo, hôte, port)
+│           ├── DamierView.java        # Vue interactive du damier (clics, sélection)
+│           ├── CaseRenderer.java      # Rendu d'une case et d'une pièce (gradients, ombres)
+│           └── SoundManager.java      # Synthèse audio (move, capture, endgame)
+│
+├── src/main/resources/                # Ressources (assets, styles)
+│   └── org/example/leprojet/
+│       ├── hello-view.fxml            # Layout FXML (déclaratif XML, non utilisé actuellement)
+│       └── styles.css                 # Feuille de styles JavaFX
+│
+└── target/                            # Répertoire build (généré par Maven)
+    ├── classes/                       # Bytecode compilé
+    ├── generated-sources/             # Sources générées (annotations)
+    └── maven-status/                  # Métadonnées build
+```
