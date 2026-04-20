@@ -4,14 +4,13 @@ Point d'entree du projet pour les equipes fonctionnelles et techniques.
 
 ## Documentation
 
-- Documentation fonctionnelle: `docs/functionel/README.md`
+- Documentation fonctionnelle: `docs/fonctionnel/README.md`
 - Documentation technique: `docs/technique/README.md`
 
 Parcours recommande pour un nouveau developpeur:
-1. Lire `docs/functionel/README.md` pour le comportement utilisateur reel.
-2. Lire `docs/functionel/modules.md` pour les flux de session et regles metier.
-3. Lire `docs/technique/architecture.md` pour l'architecture client/serveur, les dependances et le deep dive.
-4. Lire `docs/technique/flux-donnees.md` puis les UML dans `docs/technique/uml/`.
+1. Lire `docs/fonctionnel/README.md` pour le comportement utilisateur reel.
+2. Lire `docs/technique/architecture.md` pour l'architecture client/serveur, les dependances et le deep dive.
+3. Lire `docs/technique/flux-donnees.md` puis les UML dans `docs/technique/uml/`.
 
 ## Etat actuel
 
@@ -29,18 +28,43 @@ Le projet implemente un jeu de dames francais (10x10) en mode reseau client/serv
 - Client reseau: `src/main/java/org/example/leprojet/joueur`
 - Serveur reseau: `src/main/java/org/example/leprojet/server`
 - Ressources JavaFX: `src/main/resources/org/example/leprojet`
-- Documentation historique (cahier de charge + UML): `documentation/`
+- Documentation projet: `docs/`
 
 ## Lancer le projet
 
-Le build est base sur Maven (`pom.xml`).
+Le build est base sur Maven Wrapper (`mvnw.cmd`) et JavaFX.
 
-Exemples de commandes (PowerShell):
+### Prerequis
+
+- JDK compatible avec la configuration du projet (`source/target` a `25` dans `pom.xml`).
+- PowerShell sur Windows (commandes ci-dessous).
+
+### Demarrage rapide (serveur + clients)
+
+1. Ouvrir un premier terminal pour le serveur.
+2. Ouvrir un ou deux autres terminaux/instances IDE pour les clients.
+
+#### 1) Lancer le serveur (terminal)
 
 ```powershell
 ./mvnw.cmd clean compile
 ./mvnw.cmd javafx:run
 ```
 
-Note: selon `pom.xml`, le plugin JavaFX utilise actuellement `org.example.leprojet.server.MainServer` comme `mainClass` par defaut. Les autres points d'entree sont documentes dans `docs/technique/architecture.md`.
+Le `javafx:run` par defaut demarre `org.example.leprojet.server.MainServer` (port `6000`).
+
+#### 2) Lancer le client (depuis l'IDE)
+
+- Executer la classe `src/main/java/org/example/leprojet/ClientJoueur.java`.
+- Dans la fenetre de connexion, utiliser:
+  - Hote: `localhost`
+  - Port: `6000`
+  - Pseudo: au choix
+
+Pour jouer une partie, lancer 2 instances client et connecter les deux au meme serveur.
+
+### Changer le port serveur (optionnel)
+
+Le point d'entree serveur accepte un argument de port (`MainServer [port]`).
+Si vous demarrez le serveur depuis l'IDE, passez l'argument programme (exemple: `7000`) puis connectez les clients sur ce port.
 
